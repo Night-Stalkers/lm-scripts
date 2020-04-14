@@ -4,6 +4,7 @@
 
 """
 ipcheck
+REQUIRES requests AND IP.py
 Checks player's IP addresses using the proxycheck.io API.
 To function correctly, a file called "api_key.txt" containing
 a valid proxycheck.io API key must exist inside the "ipcheck_data"
