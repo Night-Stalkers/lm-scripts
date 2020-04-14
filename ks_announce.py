@@ -26,6 +26,9 @@ Author: Hourai (Yui)
 
 Changelog:
 
+1.2.1:
+    * Removed some debug printing which cluttered console output.
+
 1.2.0:
     * Multiple bugfixes and improvements.
     * IRC commands now work as they should.
@@ -225,15 +228,9 @@ def apply_script(protocol, connection, config):
         end_streak_msg = "...!"
 
         def on_disconnect(self):
-            print "ks_announce: entering on disconnect"
-            print self.protocol.high_record_all
             if self.player_id in protocol.high_record_all:
                 del self.protocol.high_record_all[self.player_id]
-                print "ks_announce: deleted key %d from protocol record" % self.player_id
-            print self.protocol.high_record_all
             self.recalc_max()
-            print "ks_announce: recalculated max"
-            print "ks_announce: leaving on disconnect"
             return connection.on_disconnect(self)
 
         def recalc_max(self):
