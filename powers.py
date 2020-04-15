@@ -17,11 +17,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 """
-Changelog:
+Changelog
+    
+    1.0.1:
+        * /checkpowers can now be used by every player.
 
     1.0.0:
         * intelrpg2.py -> powers.py
-        * Now using semantic versioning
+        * Now using semantic versioning.
         * New command /checkpowers id
 """
 
@@ -46,7 +49,6 @@ def clearpowers(connection):
     return "You've sucessfully lost all your powers!"
 add(clearpowers)
 
-@admin
 def checkpowers(connection, player_id=None):
     proto = connection.protocol
     player_id = int(player_id)
