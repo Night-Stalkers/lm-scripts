@@ -18,6 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Changelog
+
+    1.0.2:
+        * Re-enabled regeneration.
     
     1.0.1:
         * /checkpowers can now be used by every player.
@@ -71,7 +74,7 @@ def power(connection, value = 7):
         connection.send_chat("Type /current to see current powers")
         connection.send_chat("Type /powerpref for info on setting prefered power")
         connection.send_chat('2 - Good Teammate     5 - Poison Bullets     6 - Nadesplosion')
-        connection.send_chat('1 - Deadly Dice       4 - Nothing lol        7 - Erector')
+        connection.send_chat('1 - Deadly Dice       4 - Regeneration       7 - Erector')
         connection.send_chat('0 - Armor             3 - Teleportation')
         connection.send_chat("Type /power # to read about a power:")
     elif value == ARMOR:
@@ -96,10 +99,11 @@ def power(connection, value = 7):
         connection.send_chat("Level 1 - Use grenades to teleport to where they explode.")
         connection.send_chat("The power of Teleportation (Toggle with /toggle_teleport):")
     elif value == REGEN:
-        connection.send_chat("Level 3 - This power does nothing at all.")
-        connection.send_chat("Level 2 - Why would you get this power?")
-        connection.send_chat("Level 1 - Nothing happens. Useless, isn't it?")
-        connection.send_chat("The power of Nothingness (formerly Regeneration):")
+        connection.send_chat("Regen does not work while poisoned!")
+        connection.send_chat("Level 3 - Regenerate 10 HP per second.")
+        connection.send_chat("Level 2 - Regenerate 5 HP per second.")
+        connection.send_chat("Level 1 - Regenerate 2 HP per second.")
+        connection.send_chat("The power of Regeneration:")
     elif value == POISON:
         connection.send_chat("Level 3 - Your bullets do 3 damage per second after hitting")
         connection.send_chat("Level 2 - Your bullets do 2 damage per second after hitting")
@@ -144,7 +148,7 @@ def powerpref(connection, value = 8):
     value = int(value)
     if value > 7:
         connection.send_chat('2 - Good Teammate     5 - Poison Bullets     6 - Nadesplosion')
-        connection.send_chat('1 - Deadly Dice       4 - NOTHING            7 - Erector')
+        connection.send_chat('1 - Deadly Dice       4 - Regeneration       7 - Erector')
         connection.send_chat('0 - Armor             3 - Teleportation')
         connection.send_chat("Type /powerpref # to set a preference")
         connection.send_chat("Preference is ignored on your first intel grab.")
@@ -177,7 +181,7 @@ def apply_script(protocol, connection, config):
             message = ("Deadly Dice level %s" % self.intel_p_lvl[1]) if self.intel_temp == 1 else message
             message = ("Good Teammate level %s" % self.intel_p_lvl[2]) if self.intel_temp == 2 else message
             message = ("Teleportation level %s" % self.intel_p_lvl[3]) if self.intel_temp == 3 else message
-            message = ("NOTHING level %s" % self.intel_p_lvl[4]) if self.intel_temp == 4 else message
+            message = ("Regeneration level %s" % self.intel_p_lvl[4]) if self.intel_temp == 4 else message
             message = ("Poison Bullets level %s" % self.intel_p_lvl[5]) if self.intel_temp == 5 else message
             message = ("Nadesplosion level %s" % self.intel_p_lvl[6]) if self.intel_temp == 6 else message
             message = ("Erector level %s" % self.intel_p_lvl[7]) if self.intel_temp == 7 else message
@@ -189,7 +193,7 @@ def apply_script(protocol, connection, config):
             message += ("Deadly Dice level %s, " % self.intel_p_lvl[1]) if self.intel_p_lvl[1] > 0 else ""
             message += ("Good Teammate level %s, " % self.intel_p_lvl[2]) if self.intel_p_lvl[2] > 0 else ""
             message += ("Teleportation level %s, " % self.intel_p_lvl[3]) if self.intel_p_lvl[3] > 0 else ""
-            message += ("NOTHING level %s, " % self.intel_p_lvl[4]) if self.intel_p_lvl[4] > 0 else ""
+            message += ("Regeneration level %s, " % self.intel_p_lvl[4]) if self.intel_p_lvl[4] > 0 else ""
             message += ("Poison Bullets level %s, " % self.intel_p_lvl[5]) if self.intel_p_lvl[5] > 0 else ""
             message += ("Nadesplosion level %s, " % self.intel_p_lvl[6]) if self.intel_p_lvl[6] > 0 else ""
             message += ("Erector level %s, " % self.intel_p_lvl[7]) if self.intel_p_lvl[7] > 0 else ""
@@ -313,14 +317,13 @@ def apply_script(protocol, connection, config):
             if self.poison > 0 and self.poisoner is not None and self.poisoner.world_object is not None:
                 self.hit(self.poison, self.poisoner)
 
-            # REGENERATION POWER IS DISABLED
-            # elif self.intel_p_lvl[4] > 0:
-            #     if self.intel_p_lvl[4] == 3:
-            #         self.set_hp(self.hp + 10, type = FALL_KILL)
-            #     if self.intel_p_lvl[4] == 2:
-            #         self.set_hp(self.hp + 5, type = FALL_KILL)
-            #     if self.intel_p_lvl[4] == 1:
-            #         self.set_hp(self.hp + 2, type = FALL_KILL)
+            elif self.intel_p_lvl[4] > 0:
+                if self.intel_p_lvl[4] == 3:
+                    self.set_hp(self.hp + 10, type = FALL_KILL)
+                if self.intel_p_lvl[4] == 2:
+                    self.set_hp(self.hp + 5, type = FALL_KILL)
+                if self.intel_p_lvl[4] == 1:
+                    self.set_hp(self.hp + 2, type = FALL_KILL)
 
         def on_refill(self):
             if self.intel_p_lvl[3] == 3:
@@ -418,25 +421,21 @@ def apply_script(protocol, connection, config):
 
         def intel_upgrade(self):
             say = self.send_chat
-
-            if sum(self.intel_p_lvl) >= 21:
+            if sum(self.intel_p_lvl) >= 24:
                 say("You have every power maxed out!")
                 return False
             dice_roll = random.randint(0, 7)
-            while dice_roll == 4:
-                dice_roll = random.randint(0, 7)
             if self.intel_power_pref != 8 and sum(self.intel_p_lvl) != 0:
-                dice_roll = self.intel_power_pref if self.intel_power_pref != 4 else dice_roll
+                dice_roll = self.intel_power_pref
                 if self.intel_p_lvl[dice_roll] < 3:
                     self.intel_p_lvl[dice_roll] += 1
                     return dice_roll
             while (self.intel_p_lvl[dice_roll] == 3):
                 dice_roll = random.randint(0, 7)
-                while dice_roll == 4:
-                    dice_roll = random.randint(0, 7)
             self.intel_power_pref = dice_roll if sum(self.intel_p_lvl) != 0 or self.intel_power_pref == 7 else self.intel_power_pref
             self.intel_p_lvl[dice_roll] += 1
             return dice_roll
+
 
         def intel_downgrade(self):
             if self.intel_temp is False:
