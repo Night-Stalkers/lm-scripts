@@ -1430,7 +1430,7 @@ def apply_script(protocol, connection, config):
                     Scheduler(self.protocol).call_later(Time,self.free_from_kraken)
                     self.send_chat('The kraken ate you! You have to wait %s seconds until it spits you out!' % Time)
                 else:
-                self.protocol.kraken_lose()
+                    self.protocol.kraken_lose()
             return
             
         def on_orientation_update(self, x, y, z):
