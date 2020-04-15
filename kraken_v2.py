@@ -19,7 +19,7 @@ Author: hompy
 Editors: thepolm3, lecom, JohnRambozo, Monstarules
 Documenter: Monstarules
 
-Last modified: 14th of April, 2020
+Last modified: 15th of April, 2020
 Last modified by: Monstarules
 """
 # Imports from other libraries
@@ -609,7 +609,7 @@ class Eye():
         reactor.callLater(EYE_PAIN_TIME, self.create)
         self.look_timer = EYE_PAIN_TIME + self.look_interval_min
  
-class Kraken(Animated):
+class Kraken (Animated):
     dead = False
     origin = None
     tentacles = None
@@ -706,22 +706,24 @@ class Kraken(Animated):
             self.on_death(self)
         clear_mem(self.protocol,self)
     
-    def think(self, dt):
+    def think (self, dt):
         for eye in self.eyes:
             eye.think(dt)
         
         rebuild_list = False
-        _tentacles = []
+
         for t in self.tentacles:
             if t:
                 t.think (dt)
                 rebuild_list = rebuild_list or t.dead
-        for t in self.tentacles:
-            if t or not t.dead:
-                _tentacles.append(t)
-                self.tentacles = _tentacles
-                if not self.tentacles and self.on_last_tentacle_death:
-                    self.on_last_tentacle_death(self)
+            if rebuild_list:
+                _tentacles = []
+            for t in self.tentacles:
+                if t or not t.dead:
+                    _tentacles.append(t)
+                    self.tentacles = _tentacles
+                    if not self.tentacles and self.on_last_tentacle_death:
+                        self.on_last_tentacle_death(self)
     
     def hit(self, value, rate):
         hp_bar = self.protocol.hp_bar
@@ -764,83 +766,83 @@ class Kraken(Animated):
             delay = 0.6
             reactor.callLater(delay, self.create_head, head_list, height + 6)
 
-def clear_kraken_mem(protocol,kraken):
-    kraken.build_loop.stop()
-    kraken.build_loop=None
-    kraken.build_queue=None
-    del kraken
-    return
+    def clear_kraken_mem(protocol,kraken):
+        kraken.build_loop.stop()
+        kraken.build_loop=None
+        kraken.build_queue=None
+        del kraken
+        return
 
-@admin
-def kraken (connection, value = None):
-    protocol = connection.protocol
-    if protocol.game_mode != TC_MODE:
-        return 'Unfortunately, the game mode is required to be TC. Change it then restart'
-    if protocol.boss:
-        return "There is already a kraken! Why can't I hold all these krakens?"
-    try:
-        x, y = coordinates(value)
-    except (ValueError):
-        return 'Need coordinates where to spawn the kraken, e.g /kraken E3'
-    start_kraken(protocol, max(x, 64), max(y, 64))
- 
-if ALLOW_KRAKEN_COMMAND:
-    add(kraken)
-
-@admin
-def kraken_const(self, constname, value=None, type=None):
-    try:
-        constval=globals()[constname]
-    except KeyError:
-        return 'No such variable'
-    if not value or not type:
-        return '%s = %s' % (constname, constval)
-    if 's' in type:
-        pass
-    elif 'd' in type:
-        value=int(value)
-    elif 'f' in type:
-        value=float(value)
-    elif 'b' in type:
-        value=True if value=='True' else False
-    else:
-        return 'Unknown type'
-    globals()[constname]=value
-    return 'Set %s(%s) to %s' % (constname, constval, value)
-
-add(kraken_const)
-
-def get_kraken_ratio(protocol):
-    if not protocol.kraken_kills:
-        return 1.0
-    return float(protocol.kraken_deaths)/float(protocol.kraken_kills)
-
-def kraken_ratio(self):
-    return ('Kraken kill/death ratio:%s, kills:%s, deaths:%s' % (get_kraken_ratio(self.protocol),
-        self.protocol.kraken_kills, self.protocol.kraken_deaths))
-
-add(kraken_ratio)
-
-def kraken_player_ratio(self):
-    kraken_ratio=get_kraken_ratio(self.protocol)
-    player_count=len(self.protocol.players)
-    return ('Kraken ratio/player ratio:%s, player count:%s' % (kraken_ratio/max(1,player_count), player_count))
-
-add(kraken_player_ratio)
- 
-def start_kraken(protocol, x, y, hardcore = False, finally_call = None):
-    y += 32
-    boss = Kraken(protocol, (x, y - 12, 63))
-    protocol.boss = boss
-    protocol.map_change_on_kraken_win=hardcore
-    if USE_DAYCYCLE and protocol.daycycle_loop.running:
-        protocol.daycycle_loop.stop()
+    @admin
+    def kraken (connection, value = None):
+        protocol = connection.protocol
+        if protocol.game_mode != TC_MODE:
+            return 'Unfortunately, the game mode is required to be TC. Change it then restart'
+        if protocol.boss:
+            return "There is already a kraken! Why can't I hold all these krakens?"
+        try:
+            x, y = coordinates(value)
+        except (ValueError):
+            return 'Need coordinates where to spawn the kraken, e.g /kraken E3'
+        start_kraken(protocol, max(x, 64), max(y, 64))
     
-    arena = getattr(protocol.map_info.info, 'arena', None)
-    if arena:
-        arena_center = (int((arena[2] - arena[0]) / 2.0 + arena[0]),
-            int((arena[3] - arena[1]) / 2.0 + arena[1]))
-        arena_radius = min(arena[2] - arena[0], arena[3] - arena[1]) / 2.0
+    if ALLOW_KRAKEN_COMMAND:
+        add(kraken)
+
+    @admin
+    def kraken_const(self, constname, value=None, type=None):
+        try:
+            constval=globals()[constname]
+        except KeyError:
+            return 'No such variable'
+        if not value or not type:
+            return '%s = %s' % (constname, constval)
+        if 's' in type:
+            pass
+        elif 'd' in type:
+            value=int(value)
+        elif 'f' in type:
+            value=float(value)
+        elif 'b' in type:
+            value=True if value=='True' else False
+        else:
+            return 'Unknown type'
+        globals()[constname]=value
+        return 'Set %s(%s) to %s' % (constname, constval, value)
+
+    add(kraken_const)
+
+    def get_kraken_ratio(protocol):
+        if not protocol.kraken_kills:
+            return 1.0
+        return float(protocol.kraken_deaths)/float(protocol.kraken_kills)
+
+    def kraken_ratio(self):
+        return ('Kraken kill/death ratio:%s, kills:%s, deaths:%s' % (get_kraken_ratio(self.protocol),
+            self.protocol.kraken_kills, self.protocol.kraken_deaths))
+
+    add(kraken_ratio)
+
+    def kraken_player_ratio(self):
+        kraken_ratio=get_kraken_ratio(self.protocol)
+        player_count=len(self.protocol.players)
+        return ('Kraken ratio/player ratio:%s, player count:%s' % (kraken_ratio/max(1,player_count), player_count))
+
+    add(kraken_player_ratio)
+    
+    def start_kraken(protocol, x, y, hardcore = False, finally_call = None):
+        y += 32
+        boss = Kraken(protocol, (x, y - 12, 63))
+        protocol.boss = boss
+        protocol.map_change_on_kraken_win=hardcore
+        if USE_DAYCYCLE and protocol.daycycle_loop.running:
+            protocol.daycycle_loop.stop()
+        
+        arena = getattr(protocol.map_info.info, 'arena', None)
+        if arena:
+            arena_center = (int((arena[2] - arena[0]) / 2.0 + arena[0]),
+                int((arena[3] - arena[1]) / 2.0 + arena[1]))
+            arena_radius = min(arena[2] - arena[0], arena[3] - arena[1]) / 2.0
     
     def randring():
         min_r, max_r = 12.0, 32.0
@@ -1102,11 +1104,11 @@ def start_kraken(protocol, x, y, hardcore = False, finally_call = None):
     return boss
 
 def clear_mem(protocol,kraken):
-    return
     kraken.build_queue=None
     if kraken.build_loop:
         kraken.build_loop.stop()
         kraken.build_loop=None
+    return
     
  
 class BossTerritory (Territory):
@@ -1176,7 +1178,7 @@ def apply_script(protocol, connection, config):
         
         def on_world_update(self):
             if self.boss:
-                self.boss.think(UPDATE_FREQUENCY)
+                self.boss.think (UPDATE_FREQUENCY)
             protocol.on_world_update(self)
         
         def on_map_change(self, map):
