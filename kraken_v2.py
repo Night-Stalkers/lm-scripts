@@ -1092,16 +1092,17 @@ class Kraken (Animated):
             reactor.callLater(18.0-float(FAST_RUN)*17.0, spawn_tentacles, 5, respawn = True)
             reactor.callLater(14.0-float(FAST_RUN)*13.0, falling_blocks_start)
     
-    boss.blocks_per_cycle = 2
-    boss.build_interval = 0.01
-    if not hardcore:
-        progress = progress_normal
-        boss.hp = boss.max_hp = 2.0 + 4.0 + 3.0 + 5*3.0 + 4.0 + (4 + 4)*3.0
-    else:
-        progress = progress_hardcore
-        boss.hp = boss.max_hp = 3.0 + 4.0 + 8*3.0 + 5.0 + (6 + 6)*3.0
-    progress()
-    return boss
+        boss.blocks_per_cycle = 2
+        boss.build_interval = 0.01
+        
+        if not hardcore:
+            progress = progress_normal
+            boss.hp = boss.max_hp = 2.0 + 4.0 + 3.0 + 5*3.0 + 4.0 + (4 + 4)*3.0
+        else:
+            progress = progress_hardcore
+            boss.hp = boss.max_hp = 3.0 + 4.0 + 8*3.0 + 5.0 + (6 + 6)*3.0
+        progress()
+        return boss
 
 def clear_mem(protocol,kraken):
     kraken.build_queue=None
