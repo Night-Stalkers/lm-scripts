@@ -711,12 +711,11 @@ class Kraken(Animated):
             eye.think(dt)
         
         rebuild_list = False
+        _tentacles = []
         for t in self.tentacles:
             if t:
-                t.think(dt)
+                t.think (dt)
                 rebuild_list = rebuild_list or t.dead
-            if rebuild_list:
-                _tentacles=[]
         for t in self.tentacles:
             if t or not t.dead:
                 _tentacles.append(t)
