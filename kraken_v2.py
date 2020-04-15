@@ -1275,7 +1275,7 @@ def apply_script(protocol, connection, config):
                 return True
             return False
 
-        def kraken_lose(self):
+        def kraken_lose (self):
             self.send_chat('ALL PLAYERS WERE EATEN! GAME OVER!',True)
             if KRAKEN_ADD_SCORE:
                 intel_capture.player_id=KRAKEN_PLAYER_ID
@@ -1417,18 +1417,18 @@ def apply_script(protocol, connection, config):
             self.protocol.new_spawn_pos=True
             self.spawn()
             self.protocol.new_spawn_pos=OldValue
-            self.send_chat('The kraken spit you out. Save your mateys!')
+            self.send_chat('The kraken spit you out. Save your mates!')
 
         def check_trapped(self):
             TrappedPlayerCount=0
             PlayerCount=0
             for player in self.protocol.players.values():
                 if player.world_object and player.team.id!=-1:
-                    PlayerCount+=1
-                if not player.trapped:
-                    TrappedPlayerCount+=1
-            if TrappedPlayerCount<PlayerCount and PlayerCount:
-                Time=TRAPPED_FREE_TIME
+                    PlayerCount += 1
+                if player.trapped:
+                    TrappedPlayerCount += 1
+            if TrappedPlayerCount < PlayerCount and PlayerCount:
+                Time = TRAPPED_FREE_TIME
                 Scheduler(self.protocol).call_later(Time,self.free_from_kraken)
                 self.send_chat('The kraken ate you! You have to wait %s seconds until it spits you out!' % Time)
             else:
