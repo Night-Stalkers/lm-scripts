@@ -715,8 +715,8 @@ class Kraken(Animated):
             if t:
                 t.think(dt)
                 rebuild_list = rebuild_list or t.dead
-        if rebuild_list:
-            _tentacles=[]
+            if rebuild_list:
+                _tentacles=[]
         for t in self.tentacles:
             if t or not t.dead:
                 _tentacles.append(t)
@@ -773,7 +773,7 @@ def clear_kraken_mem(protocol,kraken):
     return
 
 @admin
-def kraken(connection, value = None):
+def kraken (connection, value = None):
     protocol = connection.protocol
     if protocol.game_mode != TC_MODE:
         return 'Unfortunately, the game mode is required to be TC. Change it then restart'
@@ -1421,15 +1421,15 @@ def apply_script(protocol, connection, config):
             TrappedPlayerCount = 0
             PlayerCount = 0
             for player in self.protocol.players.values():
-                fTrapped = player.trapped
-                if player.world_object and player.team.id != -1 and not fTrapped:
+                fTrapped = player.trapped # Trapped flag
+                if player.world_object and player.team.id != -1 and not fTrapped: # Hey, are we free?
                     PlayerCount += 1
-                elif fTrapped:
+                elif fTrapped: # If we are trapped...
                     TrappedPlayerCount += 1
                     Time = TRAPPED_FREE_TIME
-                    Scheduler(self.protocol).call_later(Time,self.free_from_kraken)
+                    Scheduler (self.protocol).call_later (Time,self.free_from_kraken)
                     self.send_chat('The kraken ate you! You have to wait %s seconds until it spits you out!' % Time)
-                elif PlayerCount == 0 and TrappedPlayerCount:
+                elif PlayerCount == 0 and TrappedPlayerCount: # If all players are trapped, game over
                     self.protocol.kraken_lose()
             return
             
