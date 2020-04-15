@@ -436,7 +436,7 @@ class Tentacle (Animated):
                     player.set_location (tip.x, tip.y, tip.z - 1.0)
                     player.kraken_hit (GRAB_DAMAGE) # Applies the damage of being defiled by a tentacle
                     break
-        self.sections.append (tip, blocks) # Final update of the tip
+        self.sections.append (tip) # Final update of the tip
         return tip
 
     # Garbage collector to delete excess tentacles
@@ -1395,8 +1395,7 @@ def apply_script(protocol, connection, config):
                         self.protocol.boss.head and self.world_object.position.z>=61):
                         self.trapped = True
                     else:
-                        self.send_chat('You died! Yell at your friends to walk '
-                            'over you to revive you.')
+                        self.send_chat('You\'re down! Yell to your mateys for help to revive you!')
             connection.on_kill(self, killer, type, grenade)
         
         def on_weapon_set(self, value):
@@ -1406,32 +1405,31 @@ def apply_script(protocol, connection, config):
                 self.spawn(self.world_object.position.get())
                 return False
             if value==2 and NEW_WEAPONS:
-                self.send_chat('BE CAREFUL: This weapon reloads slowly!')
+                self.send_chat('Arrrrrrrr! This hand cannon reloads slowly!')
             return connection.on_weapon_set(self, value)
 
-        def free_from_kraken(self):
-            if not self.trapped:
-                return
-            self.trapped=False
-            OldValue=self.protocol.new_spawn_pos
-            self.protocol.new_spawn_pos=True
-            self.spawn()
-            self.protocol.new_spawn_pos=OldValue
-            self.send_chat('The kraken spit you out. Save your mates!')
+        def free_from_kraken (self):
+            if self.trapped:
+                self.trapped=False
+                OldValue=self.protocol.new_spawn_pos
+                self.protocol.new_spawn_pos=True
+                self.spawn()
+                self.protocol.new_spawn_pos=OldValue
+                self.send_chat('The kraken spit you out. Save your mateys!')
 
         def check_trapped(self):
-            TrappedPlayerCount=0
-            PlayerCount=0
+            TrappedPlayerCount = 0
+            PlayerCount = 0
             for player in self.protocol.players.values():
-                if player.world_object and player.team.id!=-1:
+                fTrapped = player.trapped
+                if player.world_object and player.team.id != -1:
                     PlayerCount += 1
-                if player.trapped:
+                if fTrapped:
                     TrappedPlayerCount += 1
-            if TrappedPlayerCount < PlayerCount and PlayerCount:
-                Time = TRAPPED_FREE_TIME
-                Scheduler(self.protocol).call_later(Time,self.free_from_kraken)
-                self.send_chat('The kraken ate you! You have to wait %s seconds until it spits you out!' % Time)
-            else:
+                    Time = TRAPPED_FREE_TIME
+                    Scheduler(self.protocol).call_later(Time,self.free_from_kraken)
+                    self.send_chat('The kraken ate you! You have to wait %s seconds until it spits you out!' % Time)
+                else:
                 self.protocol.kraken_lose()
             return
             
