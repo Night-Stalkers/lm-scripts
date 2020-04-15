@@ -414,7 +414,7 @@ class Tentacle (Animated):
                     if not map.get_solid (x, y, z):
                         blocks.append (xyz)
                         self.blocks.add (xyz)
-                        self.build_queue.append (xyz + (KRAKEN_BLACK,))
+                        self.build_queue.append (xyz + (KRAKEN_BLACK))
                     elif not self.parent.is_location_inside (xyz, skip = self):
                         destroyed += 1 # Lets the server know to destroy blocks
         if destroyed >= radius: # If we're destroying blocks...
@@ -1275,21 +1275,21 @@ def apply_script(protocol, connection, config):
                 return True
             return False
 
-    def kraken_lose(self):
-        self.send_chat('ALL PLAYERS WERE EATEN! GAME OVER!',True)
-        if KRAKEN_ADD_SCORE:
-            intel_capture.player_id=KRAKEN_PLAYER_ID
-            intel_capture.winning=True
-            self.send_contained(intel_capture)
-        Scheduler(self).call_later(MAP_CHANGE_DELAY,self.advance_rotation,'The round was lost.')
+        def kraken_lose(self):
+            self.send_chat('ALL PLAYERS WERE EATEN! GAME OVER!',True)
+            if KRAKEN_ADD_SCORE:
+                intel_capture.player_id=KRAKEN_PLAYER_ID
+                intel_capture.winning=True
+                self.send_contained(intel_capture)
+            Scheduler(self).call_later(MAP_CHANGE_DELAY,self.advance_rotation,'The round was lost.')
 
-    def is_indestructable(self,x,y,z):
-        if self.boss:
-            if self.boss.on_block_destroy(x, y, z, DESTROY_BLOCK) == False:
-                return True
-            if self.boss.head and (x, y, z) in self.boss.head:
-                return True
-        return protocol.is_indestructable(self,x,y,z)
+        def is_indestructable(self,x,y,z):
+            if self.boss:
+                if self.boss.on_block_destroy(x, y, z, DESTROY_BLOCK) == False:
+                    return True
+                if self.boss.head and (x, y, z) in self.boss.head:
+                    return True
+            return protocol.is_indestructable(self,x,y,z)
 
     class BossConnection(connection):
         regenerating = False
@@ -1362,12 +1362,12 @@ def apply_script(protocol, connection, config):
             self.sync_ammo()
             return connection.on_spawn(self, pos)
 
-        def on_refill(self):
+        def on_refill (self):
             connection.on_refill(self)
             self.sync_ammo()
             return
         
-        def on_reset(self):
+        def on_reset (self):
             self.regenerating = False
             self.trapped = False
             self.got_water_damage = False
