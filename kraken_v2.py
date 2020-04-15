@@ -1422,14 +1422,14 @@ def apply_script(protocol, connection, config):
             PlayerCount = 0
             for player in self.protocol.players.values():
                 fTrapped = player.trapped
-                if player.world_object and player.team.id != -1:
+                if player.world_object and player.team.id != -1 and not fTrapped:
                     PlayerCount += 1
-                if fTrapped:
+                elif fTrapped:
                     TrappedPlayerCount += 1
                     Time = TRAPPED_FREE_TIME
                     Scheduler(self.protocol).call_later(Time,self.free_from_kraken)
                     self.send_chat('The kraken ate you! You have to wait %s seconds until it spits you out!' % Time)
-                else:
+                elif PlayerCount == 0 and TrappedPlayerCount:
                     self.protocol.kraken_lose()
             return
             
