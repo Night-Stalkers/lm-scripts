@@ -38,6 +38,9 @@ Modified by: Hourai(Yui)
 
 Changelog:
 
+    1.1.3:
+        * Added a check to avoid a crash when certain other scripts are used.
+
     1.1.2:
         * Admin commands now work from IRC.
         * Added original author info.
@@ -53,7 +56,7 @@ import random
 from pyspades.constants import *
 from commands import admin, add
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 
 VTradius = 1
 vel = 2.0
@@ -140,6 +143,8 @@ def apply_script(protocol, connection, config):
             return connection.add_score(self, score)
 
         def rpg(self, (x, y, z), (vx, vy, vz)):
+            if self.world_object is None:
+                return
             if self.trace_2[0] >= 0:
                 easyremove(self, self.trace_2)
             x += vx
