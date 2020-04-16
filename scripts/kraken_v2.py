@@ -1000,7 +1000,7 @@ def start_kraken(protocol, x, y, hardcore = False, finally_call = None):
             boss.on_last_tentacle_death = round_end
             spawn_tentacles(4)
         elif boss.phase == 3: # PHASE 3
-            print "$M-DEBUG: Phase 2 passed, Phase 3 entered\n"\n"
+            print "$M-DEBUG: Phase 2 passed, Phase 3 entered\n"
             boss.on_last_tentacle_death = round_end
             spawn_tentacles(3, fast = True)
         elif boss.phase == 4: # PHASE 4
