@@ -9,24 +9,24 @@ Inside this repository, you'll find two folders:
 ### Gamemodes
 #### TODO: Better descriptions
 * [kraken_old.py](gamemodes/kraken_old.py)
-  * Old version of Kraken gamemode
+  * Old version of Kraken gamemode.
 * [kraken_v2.py](gamemodes/kraken_v2.py)
   * The Kraken gamemode - https://youtu.be/QhTXhe_qirQ
 ### Scripts
 * [foxcatcher.py](scripts/foxcatcher.py)
-  * Warns admins and automatically bans players when they shoot beyond the fog visibility distance
+  * Warns admins and automatically bans players when they shoot beyond the fog visibility distance.
 * [infiblock.py](scripts/infiblocks.py)
-  * Infinite blocks script
+  * Infinite blocks script.
 * [ipcheck.py](scripts/ipcheck.py)
-  * Script for detecting VPNs and Proxies
+  * Script for detecting VPNs and Proxies using the https://proxycheck.io/ API. *Depends on the **_requests_** Python 2.7  library.
     * [IP.py](scripts/IP.py)
       * Helper class for ipcheck.py
 * [ks_announce.py](ks_announce.py)
-  * Killstreak announce script
+  * Killstreak announce and records script.
 * [powers.py](scripts/powers.py)
-  * Unique Powers that can be gained by getting a killstreak / capturing an intel
+  * Unique Powers that can be gained by getting a killstreak / capturing an intel.
 * [rpg_mod.py](rpg_mod.py)
-  * Rocket launcher script
+  * Rocket launcher script.
 
 
 *You can find more informations about each gamemode/script in their respective folders.*
@@ -40,8 +40,8 @@ Need help with something? Script is not working on your server? Feel free to ope
 ## Credits
 ### The [Night-Stalkers](https://github.com/Night-Stalkers) team:
 
-[hourai-dev](https://github.com/orgs/Night-Stalkers/people/hourai-dev) - python coding
+[hourai-dev](https://github.com/orgs/Night-Stalkers/people/hourai-dev) - Programmer (Python)
 
-[Monstarules](https://github.com/orgs/Night-Stalkers/people/Monstarules) - python coding
+[Monstarules](https://github.com/orgs/Night-Stalkers/people/Monstarules) - Programmer (Python)
 
-[Czechball](https://github.com/orgs/Night-Stalkers/people/Czechball) - server hosting
+[Czechball](https://github.com/orgs/Night-Stalkers/people/Czechball) - Server hosting and Sysadmin
