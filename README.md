@@ -18,7 +18,7 @@ Inside this repository, you'll find two folders:
 * [infiblock.py](scripts/infiblocks.py)
   * Infinite blocks script.
 * [ipcheck.py](scripts/ipcheck.py)
-  * Script for detecting VPNs and Proxies using the https://proxycheck.io/ API. *Depends on the **_requests_** Python 2.7  library.
+  * Script for detecting VPNs and Proxies using the https://proxycheck.io/ API. *Depends on the **_requests_** Python 2.7  library. Requires a valid API key.*
     * [IP.py](scripts/IP.py)
       * Helper class for ipcheck.py
 * [ks_announce.py](ks_announce.py)
