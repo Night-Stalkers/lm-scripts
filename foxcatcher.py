@@ -55,9 +55,12 @@ Author: Hourai (Yui)
 
 Changelog:
 
+    1.1.1:
+        * Autobanning is now on by default.
+
     1.1.0:
         * Renamed script (fogshot_warn -> foxcatcher).
-        * Autoban feature added. Enable it by doing "/toggle_foxcatcher_autoban" as an admin
+        * Autoban feature added. Enable it by doing "/toggle_foxcatcher_autoban" as an admin.
 
 """
 
@@ -79,7 +82,7 @@ FOG_DIST = 128  # Self explanatory, do not change this
 MINIMUM_INCIDENTS_TO_BROADCAST = 2
 
 # Enables autobanning
-AUTOBAN_ENABLED = False
+AUTOBAN_ENABLED = True
 
 # Number of incidents in which an automatic ban should be issued
 INCIDENTS_TO_AUTOBAN = 4
