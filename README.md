@@ -1,5 +1,5 @@
 # ns-scripts
-A collecton of python scripts for Ace of Spdes server implementation [PySnip](https://github.com/NateShoffner/PySnip) by members of the Night-Stalkers communiy.
+A collecton of Python scripts for Ace of Spades server implementation [PySnip](https://github.com/NateShoffner/PySnip) by members of the Night-Stalkers communiy.
 
 These scripts are provided for free under the GPL-v3 license.
 ## Folders
