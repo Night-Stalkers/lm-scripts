@@ -983,20 +983,28 @@ def start_kraken(protocol, x, y, hardcore = False, finally_call = None):
     
     progress = None
     
+    # Janky code starts here.
     def progress_normal(caller = None):
         boss.phase += 1
         round_start()
         
-        if boss.phase == 1:
+        # We have started
+        print "$M-DEBUG: BOSS PROGRESS ENTERED\n"
+
+        if boss.phase == 1: # PHASE 1
+            print "$M-DEBUG: Phase 1 entered\n"
             boss.on_last_tentacle_death = progress_delay
             spawn_tentacles(2)
-        elif boss.phase == 2:
+        elif boss.phase == 2: # PHASE 2
+            print "$M-DEBUG: Phase 1 passed, Phase 2 entered\n"
             boss.on_last_tentacle_death = round_end
             spawn_tentacles(4)
-        elif boss.phase == 3:
+        elif boss.phase == 3: # PHASE 3
+            print "$M-DEBUG: Phase 2 passed, Phase 3 entered\n"\n"
             boss.on_last_tentacle_death = round_end
             spawn_tentacles(3, fast = True)
-        elif boss.phase == 4:
+        elif boss.phase == 4: # PHASE 4
+            print "$M-DEBUG: Phase 3 passed, Phase 4 entered\n"
             boss.on_last_tentacle_death = None
             boss.on_death = round_end_delay
             boss.size = 7
@@ -1005,15 +1013,19 @@ def start_kraken(protocol, x, y, hardcore = False, finally_call = None):
             eye.on_hit = major_hit_and_progress
             reactor.callLater(7.0-float(FAST_RUN)*6.0, eye.create)
             spawn_tentacles(3, arena = True, no_hit = True)
-        elif boss.phase == 5:
-            spawn_tentacles(8, respawn = True)
-        elif boss.phase == 6:
+        elif boss.phase == 5: # Phase 5
+            print "$M-DEBUG: Phase 4 passed, Phase 5 entered\n"
+            spawn_tentacles(4, respawn = True)
+        elif boss.phase == 6: # Phase 6
+            print "$M-DEBUG: Phase 5 passed, Phase 6 entered\n"
             falling_blocks_start ()
             reactor.callLater(15.0-float(FAST_RUN)*14.0, round_end)
-        elif boss.phase == 7:
+        elif boss.phase == 7: # Phase 7
+            print "$M-DEBUG: Phase 6 passed, Phase 7 entered\n"
             boss.on_last_tentacle_death = round_end
             spawn_tentacles (4, respawn = False, fast = True, arena = True)
-        elif boss.phase == 8:
+        elif boss.phase == 8: # Phase 8
+            print "$M-DEBUG: Phase 7 passed, Phase 8 entered\n"
             red_sky()
             boss.on_last_tentacle_death = None
             boss.on_death = victory
