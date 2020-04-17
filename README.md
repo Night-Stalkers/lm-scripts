@@ -44,8 +44,8 @@ Need help with something? Script is not working on your server? Feel free to ope
 
 iCherry - Programmer
 
-[hourai-dev](https://github.com/orgs/Night-Stalkers/people/hourai-dev) - Programmer (Python)
+[hourai-dev](https://github.com/hourai-dev) - Programmer (Python)
 
-[Monstarules](https://github.com/orgs/Night-Stalkers/people/Monstarules) - Programmer (Python)
+[Monstarules](https://github.com/Monstarules) - Programmer (Python)
 
-[Czechball](https://github.com/orgs/Night-Stalkers/people/Czechball) - Server hosting and Sysadmin
+[Czechball](https://github.com/Czechball) - Server hosting and Sysadmin
