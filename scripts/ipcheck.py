@@ -29,6 +29,11 @@ directory.
 ipcheck automatically caches IP info requests for future queries,
 this cache expires after a day, by default.
 Needs to be tested a lot.
+
+Changelog:
+    
+    1.1.0:
+        * Now you can choose between using an API key file or just putting it directly in here. (USE_API_KEY_FILE)
 """
 
 from IP import IP
@@ -42,13 +47,18 @@ from commands import add, admin
 from twisted.internet import reactor
 
 NAME = "ipcheck"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 AUTHOR = "Hourai (Yui)"
+
+# If True, the script will look for an API key file in DATA_DIR (default)
+# If False, you must place your API Key into the API_KEY variable.
+USE_API_KEY_FILE = True
+API_KEY = "Replace this with your API key if USE_API_KEY_FILE is False."
 
 DATA_DIR = "./scripts/ipcheck_data/"
 API_KEY_FILENAME = "api_key.txt"
 IP_CACHE_FILENAME = "ip_cache"
-PRINT_API_KEY = False
+PRINT_API_KEY = False  # Will print your API key in the server console if enabled, use with care.
 
 REQUEST_FORMAT = "http://proxycheck.io/v2/%s?key=%s&risk=1&vpn=1"
 
@@ -105,11 +115,19 @@ class IPCheck(object):
         log_msg("running version %s by %s" % (VERSION, AUTHOR), self.proto)
 
     def start(self):
-        self.has_api_key = self._load_api_key()
+        if USE_API_KEY_FILE:
+            self.has_api_key = self._load_api_key()
+        else:
+            log_msg("API key file disabled. Using API_KEY set in script file.", self.proto)
+            self.api_key = API_KEY
+            self.has_api_key = True
 
         if not self.has_api_key:
             self.enabled = False
             log_msg("API KEY NOT FOUND, IPCHECK DISABLED!", self.proto, warn=True)
+
+        if PRINT_API_KEY:
+            log_msg("API_KEY = [%s]" % self.api_key, self.proto, irc=False)
 
         self._load_ip_cache_file()
 
@@ -196,7 +214,6 @@ class IPCheck(object):
         return ip.ip_str in self.ip_cache
 
     def _load_api_key(self):
-        #log_msg(os.getcwd(), self.proto)
         if os.path.exists(DATA_DIR + API_KEY_FILENAME):
             with open(DATA_DIR + API_KEY_FILENAME) as f:
                 lines = []
@@ -204,8 +221,6 @@ class IPCheck(object):
                     lines.append(line.rstrip())
                 self.api_key = lines[0]
                 log_msg("API KEY found!", self.proto)
-                if PRINT_API_KEY:
-                    log_msg("[%s]" % self.api_key, self.proto, irc=False)
             return True
         else:
             log_msg("API key file not found.", self.proto, irc=False)
