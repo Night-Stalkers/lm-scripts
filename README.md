@@ -40,6 +40,10 @@ Need help with something? Script is not working on your server? Feel free to ope
 ## Credits
 ### The [Night-Stalkers](https://github.com/Night-Stalkers) team:
 
+[lecom](https://github.com/LeComm) - Programmer and Sysadmin
+
+iCherry - Programmer
+
 [hourai-dev](https://github.com/orgs/Night-Stalkers/people/hourai-dev) - Programmer (Python)
 
 [Monstarules](https://github.com/orgs/Night-Stalkers/people/Monstarules) - Programmer (Python)
