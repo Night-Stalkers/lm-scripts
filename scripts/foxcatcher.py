@@ -63,7 +63,6 @@ Changelog:
         * Autoban feature added. Enable it by doing "/toggle_foxcatcher_autoban" as an admin.
 
 """
-
 from __future__ import division
 
 from math import tan, asin, pi, cos, sqrt, fabs
