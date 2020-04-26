@@ -1,6 +1,12 @@
 """
 Changelog
 
+    1.1.0:
+        * Reworked Deadly Dice.
+        * Reworked Teleportation (Now uses SNEAK + GET COLOR BUTTON, V + E).
+        * /checkpowers can now accept ids with #.
+        * Added on teleport IRC message.
+
     1.0.2:
         * Re-enabled regeneration.
     
@@ -29,6 +35,8 @@ import buildbox
 import cbc
 
 ARMOR, DEADLY_DICE, TEAMMATE, TELEP, REGEN, POISON, NADEPL, ERECTOR =  xrange(8)
+TP_RANGE = [0, 64, 128, 256]
+
 def clearpowers(connection):
     connection.intel_clear()
     return "You've sucessfully lost all your powers!"
@@ -36,6 +44,8 @@ add(clearpowers)
 
 def checkpowers(connection, player_id=None):
     proto = connection.protocol
+    if player_id[0] == '#':
+        player_id = player_id[1:]
     player_id = int(player_id)
     if player_id is None:
         return "No player ID specified."
@@ -48,9 +58,7 @@ def checkpowers(connection, player_id=None):
 
 add(checkpowers)
 
-
-
-def power(connection, value = 7):
+def power(connection, value = 8):
     value = int(value)
     if value > 7:
         connection.send_chat("Type /current to see current powers")
@@ -65,9 +73,9 @@ def power(connection, value = 7):
         connection.send_chat("Level 1 - Take 1/2 damage from body-shots and grenades.")
         connection.send_chat("The power of Armor:")
     elif value == DEADLY_DICE:
-        connection.send_chat("Level 3 - A 15% chance to instantly kill any target you hit.")
-        connection.send_chat("Level 2 - A 10% chance to instantly kill any target you hit.")
-        connection.send_chat("Level 1 - A 5% chance to instantly kill any target you hit.")
+        connection.send_chat("Level 3 - A 20% chance to instantly kill any target you hit.")
+        connection.send_chat("Level 2 - A 15% chance to instantly kill any target you hit.")
+        connection.send_chat("Level 1 - A 10% chance to instantly kill any target you hit.")
         connection.send_chat("The power of Deadly Dice:")
     elif value == TEAMMATE:
         connection.send_chat("Good Teammate also cures poison when healing!")
@@ -76,9 +84,9 @@ def power(connection, value = 7):
         connection.send_chat("Level 1 - Every headshot you make will heal you and nearby teammates 20 hp.")
         connection.send_chat("The power of the Good Teammate:")
     elif value == TELEP:
-        connection.send_chat("Level 3 - break blocks with your weapon to teleport distances and heal. (4 uses) ")
-        connection.send_chat("Level 2 - Nade teleport + break blocks with your weapon to teleport. (2 uses)")
-        connection.send_chat("Level 1 - Use grenades to teleport to where they explode.")
+        connection.send_chat("Level 3 - Range increased to %d and uses increased to 3." % TP_RANGE[3])
+        connection.send_chat("Level 2 - Range increased to %d." % TP_RANGE[2])
+        connection.send_chat("Level 1 - Press V + E to teleport where you are aiming, maximum range of %d." % TP_RANGE[1])
         connection.send_chat("The power of Teleportation (Toggle with /toggle_teleport):")
     elif value == REGEN:
         connection.send_chat("Regen does not work while poisoned!")
@@ -148,6 +156,10 @@ add(current)
 def apply_script(protocol, connection, config):
     class IntelPowerConnection(connection):
 
+        def __init__(self, *args, **kwargs):
+            self.intel_p_lvl = [0,0,0,0,0,0,0,0]
+            connection.__init__(self, *args, **kwargs)
+
         def on_login(self, name):
             self.intel_clear()
             self.headshot_splode = False
@@ -155,7 +167,7 @@ def apply_script(protocol, connection, config):
             self.erector_uses = 0
             self.Ttoggle_erector = True
             self.Ttoggle_teleport = True
-            connection.on_login(self, name)
+            return connection.on_login(self, name)
 
         def explain_temp(self):
             message = ""
@@ -214,15 +226,18 @@ def apply_script(protocol, connection, config):
                     self.send_chat("%s is wearing armor! Aim for the head!" % hit_player.name )
             if self.intel_p_lvl[1] > 0:
                 dice_roll = random.randint(1, 100)
-                if dice_roll <= 15 and self.intel_p_lvl[1] == 3:
+                if dice_roll <= 20 and self.intel_p_lvl[1] == 3:
                     value = 100
                     hit_player.send_chat("You have been instakilled by %s !" % self.name)
-                if dice_roll <= 10 and self.intel_p_lvl[1] == 2:
+                    self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                if dice_roll <= 15 and self.intel_p_lvl[1] == 2:
                     value = 100
                     hit_player.send_chat("You have been instakilled by %s !" % self.name)
-                if dice_roll <= 5 and self.intel_p_lvl[1] == 1:
+                    self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                if dice_roll <= 10 and self.intel_p_lvl[1] == 1:
                     value = 100
                     hit_player.send_chat("You have been instakilled by %s !" % self.name)
+                    self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
             if self.intel_p_lvl[5] > 0:
                 hit_player.send_chat("You have been poisoned by %s ! Get to the tent to cure it!" % self.name)
                 hit_player.poisoner = self
@@ -261,7 +276,7 @@ def apply_script(protocol, connection, config):
 
         def on_spawn(self, pos):
             if self.intel_p_lvl[3] == 3:
-                self.teleport_uses = 4
+                self.teleport_uses = 3
             else:
                 self.teleport_uses = 2
 
@@ -309,10 +324,10 @@ def apply_script(protocol, connection, config):
 
         def on_refill(self):
             if self.intel_p_lvl[3] == 3:
-                self.send_chat("4 gun-teleport uses refilled.")
-                self.teleport_uses = 4
+                self.send_chat("3 teleport uses refilled.")
+                self.teleport_uses = 3
             elif self.intel_p_lvl[3] == 2:
-                self.send_chat("2 gun-teleport uses refilled.")
+                self.send_chat("2 teleport uses refilled.")
                 self.teleport_uses = 2
             if self.poison > 0:
                 self.send_chat("You have been cured of the poison!")
@@ -335,6 +350,24 @@ def apply_script(protocol, connection, config):
                 self.send_chat("Bring intel to your base to keep it!")
                 self.send_chat("You have temporarily gained power: %s" % self.explain_temp())
 
+        def on_color_set(self, color):
+            try:
+                if self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1:
+                    if self.world_object.sneak:
+                        ray_dist = TP_RANGE[self.intel_p_lvl[3]]
+                        location = self.world_object.cast_ray(ray_dist)
+                        if location:
+                            x, y, z = location
+                            self.do_teleport(x, y, z)
+                        else:
+                            self.send_chat("Teleport out of range!")
+            except AttributeError as e:
+                # This shouldn't be reached under normal conditions
+                print "self.intel_p_lvl not found for player #%d, player is a bot perhaps?" % self.player_id
+                print "If you see this message, please report it lol"
+                self.intel_clear()
+            return connection.on_color_set(self, color)
+
         def on_flag_capture(self):
             if connection.on_flag_capture(self) is not False:
                 self.intel_temp = False
@@ -342,24 +375,22 @@ def apply_script(protocol, connection, config):
                 self.send_chat("You have %s" % self.explain_power())
             connection.on_flag_capture(self)
 
-        def on_block_destroy(self, x, y, z, mode):
+        def do_teleport(self, x, y, z):
             if (self.Ttoggle_teleport):
                 if self != self.team.other.flag.player:
-                    if self.teleport_uses == 0 and self.intel_p_lvl[3] >= 2 and self.tool == WEAPON_TOOL:
-                        self.send_chat("You've run out of gun-teleport uses!")
-                    if self.intel_p_lvl[3] >= 2 and mode == DESTROY_BLOCK and self.tool == WEAPON_TOOL and self.teleport_uses > 0:
+                    if self.teleport_uses == 0:
+                        self.send_chat("You've run out of teleport uses!")
+                    if self.teleport_uses > 0:
                         self.teleport_uses -= 1
-                        self.send_chat("%s Gun-teleport uses remaining." % self.teleport_uses)
+                        self.send_chat("%s teleport uses remaining." % self.teleport_uses)
                         self.clear_tele_area(x, y, z)
                         self.set_location_safe((x, y, z-1))
-                    if self.intel_p_lvl[3] >= 1 and mode == GRENADE_DESTROY and self.headshot_splode == False:
-                        self.set_location_safe((x, y, z-1))
+                        msg = "%s (#%d) used Teleport!" % (self.name, self.player_id)
+                        self.protocol.irc_say(msg)
+                        print msg
                 else:
-                    if self.intel_p_lvl[3] >= 2 and mode == DESTROY_BLOCK and self.tool == WEAPON_TOOL:
-                        self.send_chat("You can't teleport while holding intel!")
-                    if self.intel_p_lvl[3] >= 1 and mode == GRENADE_DESTROY:
-                        self.send_chat("You can't teleport while holding intel!")
-            return connection.on_block_destroy(self, x, y, z, mode)
+                    self.send_chat("You can't teleport while holding intel!")
+            return
 
         def sign(self, x):
             return (x > 0) - (x < 0)
