@@ -4,7 +4,7 @@ Changelog
     1.1.0:
         * Reworked Deadly Dice.
         * Reworked Teleportation (Now uses SNEAK + GET COLOR BUTTON, V + E)
-        * /chechpowers can now accept ids with #
+        * /checkpowers can now accept ids with #
 
     1.0.2:
         * Re-enabled regeneration.
@@ -156,8 +156,8 @@ def apply_script(protocol, connection, config):
     class IntelPowerConnection(connection):
 
         def __init__(self, *args, **kwargs):
-            connection.__init__(self, *args, **kwargs)
             self.intel_p_lvl = [0,0,0,0,0,0,0,0]
+            connection.__init__(self, *args, **kwargs)
 
         def on_login(self, name):
             self.intel_clear()
@@ -350,15 +350,21 @@ def apply_script(protocol, connection, config):
                 self.send_chat("You have temporarily gained power: %s" % self.explain_temp())
 
         def on_color_set(self, color):
-            if self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1:
-                if self.world_object.sneak:
-                    ray_dist = TP_RANGE[self.intel_p_lvl[3]]
-                    location = self.world_object.cast_ray(ray_dist)
-                    if location:
-                        x, y, z = location
-                        self.do_teleport(x, y, z)
-                    else:
-                        self.send_chat("Teleport out of range!")
+            try:
+                if self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1:
+                    if self.world_object.sneak:
+                        ray_dist = TP_RANGE[self.intel_p_lvl[3]]
+                        location = self.world_object.cast_ray(ray_dist)
+                        if location:
+                            x, y, z = location
+                            self.do_teleport(x, y, z)
+                        else:
+                            self.send_chat("Teleport out of range!")
+            except AttributeError as e:
+                # This shouldn't be reached under normal conditions
+                print "self.intel_p_lvl not found for player #%d, player is a bot perhaps?" % self.player_id
+                print "If you see this message, please report it lol"
+                self.intel_clear()
             return connection.on_color_set(self, color)
 
         def on_flag_capture(self):
@@ -469,4 +475,4 @@ def apply_script(protocol, connection, config):
                 self.intel_second_counter = 0
             protocol.on_world_update(self)
 
-    return IntelPowerProtocol, IntelPowerConnection 
+    return IntelPowerProtocol, IntelPowerConnection
