@@ -3,8 +3,9 @@ Changelog
 
     1.1.0:
         * Reworked Deadly Dice.
-        * Reworked Teleportation (Now uses SNEAK + GET COLOR BUTTON, V + E)
-        * /checkpowers can now accept ids with #
+        * Reworked Teleportation (Now uses SNEAK + GET COLOR BUTTON, V + E).
+        * /checkpowers can now accept ids with #.
+        * Added on teleport IRC message.
 
     1.0.2:
         * Re-enabled regeneration.
@@ -384,6 +385,9 @@ def apply_script(protocol, connection, config):
                         self.send_chat("%s teleport uses remaining." % self.teleport_uses)
                         self.clear_tele_area(x, y, z)
                         self.set_location_safe((x, y, z-1))
+                        msg = "%s (#%d) used Teleport!" % (self.name, self.player_id)
+                        self.protocol.irc_say(msg)
+                        print msg
                 else:
                     self.send_chat("You can't teleport while holding intel!")
             return
