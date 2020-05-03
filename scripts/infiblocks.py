@@ -5,6 +5,9 @@ Modified by: Hourai (Yui)
 
 Changelog:
     
+    1.0.1:
+        * Fixed a bug in which placing a block would cause a hit effect
+        on voxlap based clients.
     1.0.0:
         * Started using Semantic Versioning.
         * Added license.
@@ -13,7 +16,7 @@ Changelog:
 """
 
 from commands import add, name
-
+from pyspades.constants import *
 
 @name('blocks')
 def toggle_infi_blocks(connection):
@@ -35,7 +38,7 @@ def apply_script(protocol, connection, config):
             if self.infi_blocks:
                 old_hp = self.hp
                 self.refill()
-                self.set_hp(old_hp)
+                self.set_hp(old_hp, type = FALL_KILL)
         
         def on_block_build(self, x, y, z):
             self._infi_refill()
