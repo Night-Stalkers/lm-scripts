@@ -394,9 +394,9 @@ def apply_script(protocol, connection, config):
                         self.clear_tele_area(x, y, z)
                         self.set_location_safe((x, y, z-1))
                         msg = "%s (#%d) used Teleport!" % (self.name, self.player_id)
-                        msg2 = "%s used Teleport!" % (self.name, self.player_id)
+                        msg2 = "%s used Teleport!" % (self.name)
                         self.protocol.irc_say(msg)
-                        self.protocol.send_chat(msg)
+                        self.protocol.send_chat(msg2)
                         print msg
                 else:
                     self.send_chat("You can't teleport while holding intel!")
