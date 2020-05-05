@@ -1,6 +1,11 @@
 """
 Changelog
 
+    1.1.1:
+        * Balanced teleport ranges.
+        * Now players can only teleport when holding block tool ("fixes" #10).
+        * Add new teleport global notification.
+
     1.1.0:
         * Reworked Deadly Dice.
         * Reworked Teleportation (Now uses SNEAK + GET COLOR BUTTON, V + E).
@@ -9,7 +14,7 @@ Changelog
 
     1.0.2:
         * Re-enabled regeneration.
-    
+
     1.0.1:
         * /checkpowers can now be used by every player.
 
@@ -34,8 +39,8 @@ import commands
 import buildbox
 import cbc
 
-ARMOR, DEADLY_DICE, TEAMMATE, TELEP, REGEN, POISON, NADEPL, ERECTOR =  xrange(8)
-TP_RANGE = [0, 64, 128, 256]
+ARMOR, DEADLY_DICE, TEAMMATE, TELEP, REGEN, POISON, NADEPL, ERECTOR = xrange(8)
+TP_RANGE = [0, 64, 128, 192]
 
 def clearpowers(connection):
     connection.intel_clear()
@@ -86,7 +91,7 @@ def power(connection, value = 8):
     elif value == TELEP:
         connection.send_chat("Level 3 - Range increased to %d and uses increased to 3." % TP_RANGE[3])
         connection.send_chat("Level 2 - Range increased to %d." % TP_RANGE[2])
-        connection.send_chat("Level 1 - Press V + E to teleport where you are aiming, maximum range of %d." % TP_RANGE[1])
+        connection.send_chat("Level 1 - Press V + E while holding BLOCK TOOL to teleport where you are aiming, maximum range of %d." % TP_RANGE[1])
         connection.send_chat("The power of Teleportation (Toggle with /toggle_teleport):")
     elif value == REGEN:
         connection.send_chat("Regen does not work while poisoned!")
@@ -351,6 +356,9 @@ def apply_script(protocol, connection, config):
                 self.send_chat("You have temporarily gained power: %s" % self.explain_temp())
 
         def on_color_set(self, color):
+            if (self.tool != BLOCK_TOOL):
+                self.send_chat("Switch to BLOCK TOOL to use teleport!")
+                return connection.on_color_set(self, color)
             try:
                 if self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1:
                     if self.world_object.sneak:
@@ -386,7 +394,9 @@ def apply_script(protocol, connection, config):
                         self.clear_tele_area(x, y, z)
                         self.set_location_safe((x, y, z-1))
                         msg = "%s (#%d) used Teleport!" % (self.name, self.player_id)
+                        msg2 = "%s used Teleport!" % (self.name, self.player_id)
                         self.protocol.irc_say(msg)
+                        self.protocol.send_chat(msg)
                         print msg
                 else:
                     self.send_chat("You can't teleport while holding intel!")
