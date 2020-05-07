@@ -1,6 +1,11 @@
 """
 Changelog
 
+    1.1.2:
+        * Fixed erector crash under certain circumstances.
+        * OS: Fixed "switch to block tool" message showing even in player doesn't have
+        teleport power.
+
     1.1.1:
         * Balanced teleport ranges.
         * Now players can only teleport when holding block tool ("fixes" #10).
@@ -159,6 +164,8 @@ def current(connection):
 add(current)
 
 def apply_script(protocol, connection, config):
+    protocol, connection = cbc.apply_script(protocol, connection, config)
+
     class IntelPowerConnection(connection):
 
         def __init__(self, *args, **kwargs):
@@ -356,7 +363,7 @@ def apply_script(protocol, connection, config):
                 self.send_chat("You have temporarily gained power: %s" % self.explain_temp())
 
         def on_color_set(self, color):
-            if (self.tool != BLOCK_TOOL):
+            if (self.tool != BLOCK_TOOL and self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1):
                 self.send_chat("Switch to BLOCK TOOL to use teleport!")
                 return connection.on_color_set(self, color)
             try:
