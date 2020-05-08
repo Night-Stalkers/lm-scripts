@@ -257,7 +257,7 @@ def apply_script(protocol, connection, config):
                     if self.has_remaining_rpg():
                         r = "rockets" if self.RPG_uses_remaining > 1 else "rocket"
                         self.send_chat("To fire RPG, HOLD both right&left click! %s left: %d" %
-                                       (self.RPG_uses_remaining, r))
+                                       (r, self.RPG_uses_remaining))
                     else:
                         self.send_chat("you don't have RPG")
             return connection.on_secondary_fire_set(self, secondary)
