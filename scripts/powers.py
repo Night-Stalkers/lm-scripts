@@ -1,14 +1,17 @@
 """
 Changelog
 
+    1.2.0:
+        * Nadesplotion now makes you immune to your own grenade damage.
+        * Made Erector power less useless (now every level has 25 uses).
+
     1.1.2:
         * Fixed erector crash under certain circumstances.
-        * OS: Fixed "switch to block tool" message showing even in player doesn't have
-        teleport power.
+        * OS: Fixed "switch to block tool" message showing even to players who don't have teleport power.
 
     1.1.1:
         * Balanced teleport ranges.
-        * Now players can only teleport when holding block tool ("fixes" #10).
+        * Now players can only teleport when holding block tool (fixes #10).
         * Add new teleport global notification.
 
     1.1.0:
@@ -39,6 +42,7 @@ from pyspades.collision import distance_3d_vector
 from pyspades.server import block_action
 from pyspades.constants import *
 from commands import add, admin
+from twisted.internet.reactor import callLater, seconds
 import random
 import commands
 import buildbox
@@ -113,11 +117,12 @@ def power(connection, value = 8):
         connection.send_chat("Level 3 - A 50% chance headshots cause an explosion.")
         connection.send_chat("Level 2 - A 25% chance headshots cause an explosion.")
         connection.send_chat("Level 1 - A 10% chance headshots cause an explosion.")
+        connection.send_chat("All levels - You become immune to your own grenades.")
         connection.send_chat("The power of Nadesplosion:")
     elif value == ERECTOR:
-        connection.send_chat("Level 3 - Every block place makes a 6 high pillar (4 uses)")
-        connection.send_chat("Level 2 - Every block place makes a 4 high pillar (8 uses)")
-        connection.send_chat("Level 1 - Every block place makes a 2 high pillar (10 uses)")
+        connection.send_chat("Level 3 - Every block place makes a 6 high pillar (25 uses)")
+        connection.send_chat("Level 2 - Every block place makes a 4 high pillar (25 uses)")
+        connection.send_chat("Level 1 - Every block place makes a 2 high pillar (25 uses)")
         connection.send_chat("The power of Erector (Toggle with /toggle_erector):")
 add(power)
 
@@ -179,7 +184,12 @@ def apply_script(protocol, connection, config):
             self.erector_uses = 0
             self.Ttoggle_erector = True
             self.Ttoggle_teleport = True
+            self.grenade_immunity_msg_timeout = False
             return connection.on_login(self, name)
+
+        def _grenade_immunity_timout(self):
+            if (self.grenade_immunity_msg_timeout):
+                self.grenade_immunity_msg_timeout = False
 
         def explain_temp(self):
             message = ""
@@ -223,6 +233,12 @@ def apply_script(protocol, connection, config):
 
         def on_hit(self, hit_amount, hit_player, type, grenade):
             value = connection.on_hit(self, hit_amount, hit_player, type, grenade)
+            if (self.intel_p_lvl[6] and grenade and self.player_id == hit_player.player_id):
+                if not self.grenade_immunity_msg_timeout:
+                    self.send_chat("You are immunized against all danger!")
+                    self.grenade_immunity_msg_timeout = True
+                    callLater(3, self._grenade_immunity_timout)
+                return 0
             if value is not None or hit_player.team == self.team:
                 return value
             value = hit_amount
@@ -293,11 +309,11 @@ def apply_script(protocol, connection, config):
                 self.teleport_uses = 2
 
             if self.intel_p_lvl[7] == 1:
-                self.erector_uses = 10
+                self.erector_uses = 25
             elif self.intel_p_lvl[7] == 2:
-                self.erector_uses = 8
+                self.erector_uses = 25
             else:
-                self.erector_uses = 4
+                self.erector_uses = 25
 
             self.power_kills = 0
             self.poisoner = None
@@ -346,14 +362,14 @@ def apply_script(protocol, connection, config):
                 self.poison = 0
                 self.poisoner = None
             if self.intel_p_lvl[7] == 1:
-                self.erector_uses = 10
-                self.send_chat("You have 10 Erector uses (2 high)")
+                self.erector_uses = 25
+                self.send_chat("You have 25 Erector uses (2 high)")
             elif self.intel_p_lvl[7] == 2:
-                self.erector_uses = 8
-                self.send_chat("You have 8 Erector uses (4 high)")
+                self.erector_uses = 25
+                self.send_chat("You have 25 Erector uses (4 high)")
             elif self.intel_p_lvl[7] == 3:
-                self.erector_uses = 4
-                self.send_chat("You have 4 Erector uses (6 high)")
+                self.erector_uses = 25
+                self.send_chat("You have 25 Erector uses (6 high)")
             return connection.on_refill(self)
 
         def on_flag_take(self):
