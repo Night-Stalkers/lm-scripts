@@ -1,8 +1,14 @@
 """
 Changelog
 
+    1.3.0:
+        * Added Teleport cooldown.
+        * Can't teleport to prison anymore.
+        * Tent and Intel now disrupts enemy teleportation, this is to mitigate tp spawncamping.
+        * Added new '/toggle_nospam_mode' which disables some of the spammy power messages.
+
     1.2.0:
-        * Nadesplotion now makes you immune to your own grenade damage.
+        * Nadesplosion now makes you immune to your own grenade damage.
         * Made Erector power less useless (now every level has 25 uses).
 
     1.1.2:
@@ -50,6 +56,15 @@ import cbc
 
 ARMOR, DEADLY_DICE, TEAMMATE, TELEP, REGEN, POISON, NADEPL, ERECTOR = xrange(8)
 TP_RANGE = [0, 64, 128, 192]
+
+TENT_DISRUPT_DIST = 100
+INTEL_DISRUPT_DIST = 32
+
+TP_COOLDOWN_TIME = 5.0
+
+PRISON_X = 260
+PRISON_Y = 260
+PRISON_Z = 11
 
 def clearpowers(connection):
     connection.intel_clear()
@@ -135,6 +150,18 @@ def cheatpower(connection):
         print e
 add(cheatpower)
 
+@admin
+def magic(connection):
+    try:
+        for i in range(10):
+            connection.intel_upgrade()
+        connection.send_chat("You have %s" % connection.explain_power())
+        connection.protocol.irc_say("%s (%d) used MAGIC. (AUTO POWER CHEAT)" % (connection.name, connection.player_id))
+        connection.protocol.send_chat("%s (%d) used MAGIC. (AUTO POWER CHEAT)" % (connection.name, connection.player_id))
+    except TypeError as e:
+        print e
+add(magic)
+
 def cheaterectorsBIGKOK(connection):
     connection.erector_uses = connection.erector_uses + 10
 add(cheaterectorsBIGKOK)
@@ -148,6 +175,11 @@ def toggle_erector(connection):
     connection.Ttoggle_erector = not connection.Ttoggle_erector
     connection.send_chat("Toggled erector power to %r" % connection.Ttoggle_erector)
 add(toggle_erector)
+
+def toggle_nospam_mode(connection):
+    connection.no_spam_mode = not connection.no_spam_mode
+    connection.send_chat("No spam mode enabled: %r" % connection.no_spam_mode)
+add(toggle_nospam_mode)
 
 def powerpref(connection, value = 8):
     value = int(value)
@@ -175,6 +207,8 @@ def apply_script(protocol, connection, config):
 
         def __init__(self, *args, **kwargs):
             self.intel_p_lvl = [0,0,0,0,0,0,0,0]
+            self.teleport_ready = True
+            self.no_spam_mode = False
             connection.__init__(self, *args, **kwargs)
 
         def on_login(self, name):
@@ -185,11 +219,16 @@ def apply_script(protocol, connection, config):
             self.Ttoggle_erector = True
             self.Ttoggle_teleport = True
             self.grenade_immunity_msg_timeout = False
+            self.teleport_ready = True
             return connection.on_login(self, name)
 
         def _grenade_immunity_timout(self):
             if (self.grenade_immunity_msg_timeout):
                 self.grenade_immunity_msg_timeout = False
+
+        def _ready_teleport(self):
+            if not self.teleport_ready:
+                self.teleport_ready = True
 
         def explain_temp(self):
             message = ""
@@ -235,7 +274,8 @@ def apply_script(protocol, connection, config):
             value = connection.on_hit(self, hit_amount, hit_player, type, grenade)
             if (self.intel_p_lvl[6] and grenade and self.player_id == hit_player.player_id):
                 if not self.grenade_immunity_msg_timeout:
-                    self.send_chat("You are immunized against all danger!")
+                    if not self.no_spam_mode:
+                        self.send_chat("You are immunized against all danger!")
                     self.grenade_immunity_msg_timeout = True
                     callLater(3, self._grenade_immunity_timout)
                 return 0
@@ -257,15 +297,18 @@ def apply_script(protocol, connection, config):
                 if dice_roll <= 20 and self.intel_p_lvl[1] == 3:
                     value = 100
                     hit_player.send_chat("You have been instakilled by %s !" % self.name)
-                    self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                    if not self.no_spam_mode:
+                        self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
                 if dice_roll <= 15 and self.intel_p_lvl[1] == 2:
                     value = 100
                     hit_player.send_chat("You have been instakilled by %s !" % self.name)
-                    self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                    if not self.no_spam_mode:
+                        self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
                 if dice_roll <= 10 and self.intel_p_lvl[1] == 1:
                     value = 100
                     hit_player.send_chat("You have been instakilled by %s !" % self.name)
-                    self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                    if not self.no_spam_mode:
+                        self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
             if self.intel_p_lvl[5] > 0:
                 hit_player.send_chat("You have been poisoned by %s ! Get to the tent to cure it!" % self.name)
                 hit_player.poisoner = self
@@ -285,7 +328,7 @@ def apply_script(protocol, connection, config):
                     if killer.intel_p_lvl[2] > 1:
                         healcount += 1
                         killer.heal_team(30)
-                    if healcount > 0:
+                    if healcount > 0 and not killer.no_spam_mode:
                         killer.send_chat("Your kill has healed you and your teammates!")
                 if killer.intel_p_lvl[6] > 0 and type == HEADSHOT_KILL:
                     dice_roll = random.randint(1, 100)
@@ -379,6 +422,10 @@ def apply_script(protocol, connection, config):
                 self.send_chat("You have temporarily gained power: %s" % self.explain_temp())
 
         def on_color_set(self, color):
+            if not self.teleport_ready:
+                self.send_chat("Wait more before using teleport again!")
+                return connection.on_color_set(self, color)
+
             if (self.tool != BLOCK_TOOL and self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1):
                 self.send_chat("Switch to BLOCK TOOL to use teleport!")
                 return connection.on_color_set(self, color)
@@ -389,10 +436,24 @@ def apply_script(protocol, connection, config):
                         location = self.world_object.cast_ray(ray_dist)
                         if location:
                             x, y, z = location
+                            loc_ver = Vertex3(x, y, z)
+                            pri_ver = Vertex3(PRISON_X, PRISON_Y, PRISON_X)
+                            dist_tent = distance_3d_vector(loc_ver, self.team.other.base)
+                            dist_intel = distance_3d_vector(loc_ver, self.team.other.flag)
+                            if dist_tent < TENT_DISRUPT_DIST or dist_intel < INTEL_DISRUPT_DIST:
+                                self.send_chat("The enemy disrupts your teleport power!")
+                                return connection.on_color_set(self, color)
+                            elif loc_ver.x > PRISON_X - 10 and loc_ver.x <= PRISON_X \
+                            and loc_ver.y > PRISON_Y - 10 and loc_ver.y <= PRISON_Y \
+                                and loc_ver.z <= PRISON_Z + 10:
+                                self.send_chat("Can't teleport to prison.")
+                                return connection.on_color_set(self, color)
                             self.do_teleport(x, y, z)
+                            self.teleport_ready = False
+                            callLater(TP_COOLDOWN_TIME, self._ready_teleport)
                         else:
                             self.send_chat("Teleport out of range!")
-            except AttributeError as e:
+            except OverflowError:
                 # This shouldn't be reached under normal conditions
                 print "self.intel_p_lvl not found for player #%d, player is a bot perhaps?" % self.player_id
                 print "If you see this message, please report it lol"
