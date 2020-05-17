@@ -3,23 +3,13 @@
 """
 
 easygre(connection, (x, y, z), (vx, vy, vz), fuse)
- (x, y, z)の位置から(vx, vy, vz)の速度でconnectionのグレネードを生成
- fuseは起爆までの時間、指定せずに呼び出すと自動的に着発信管に
-
 
 easyblock(connection, (x, y, z), color)
- (x, y, z)の位置にcolor(r, g, b)のブロックを生成
- 直接値を指定する他、colorにはRED,ORANGE,YELLOW,GREEN,SKYBLUE,BLUE,PURPLE,PINK,BEIGE,WHITE,BLACKを使用可能
-
 
 easyremove(connection, (x, y, z))
- (x, y, z)の位置のブロックを削除
-
 
 easycollision(connection, (x, y, z), (vx, vy, vz))
- (x, y, z)の位置から(vx, vy, vz)の速度で撃ち出されたグレネードが最初にブロックに衝突する位置と時間を返す
- time, x, y, zと返される
- 
+
 """
 from pyspades.world import Grenade
 from pyspades.constants import *
@@ -41,7 +31,9 @@ BEIGE = (255, 255, 192)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
-def easygre(connection, (x, y, z), (vx, vy, vz), fuse = 'hitexp'):
+def easygre(connection, xyz, vxyz, fuse = 'hitexp'):
+	(x, y, z) = xyz
+	(vx, vy, vz) = vxyz
 	if fuse == 'hitexp':
 		fuse=easycollision(connection, (x, y, z), (vx, vy, vz))[0]
 	grenade=connection.protocol.world.create_object(Grenade, fuse, Vertex3(x, y, z), None, Vertex3(vx, vy, vz), connection.grenade_exploded)
@@ -50,8 +42,9 @@ def easygre(connection, (x, y, z), (vx, vy, vz), fuse = 'hitexp'):
 	grenade_packet.position = (x, y, z)
 	grenade_packet.velocity = (vx, vy, vz)
 	connection.protocol.send_contained(grenade_packet)
- 
-def easyblock(connection, (x, y, z), color):
+
+def easyblock(connection, xyz, color):
+	(x, y, z) = xyz
 	block_action = BlockAction()
 	set_color = SetColor()
 	set_color.value = make_color(*color)
@@ -65,7 +58,8 @@ def easyblock(connection, (x, y, z), color):
 	connection.protocol.send_contained(block_action)
 	connection.protocol.map.set_point(x, y, z, color)
 
-def easyremove(connection, (x, y, z)):
+def easyremove(connection, xyz):
+	(x, y, z) = xyz
 	block_action = BlockAction()
 	block_action.player_id = connection.player_id
 	block_action.value = DESTROY_BLOCK
@@ -75,7 +69,9 @@ def easyremove(connection, (x, y, z)):
 	connection.protocol.send_contained(block_action)
 	connection.protocol.map.remove_point(x, y, z)
 
-def easycollision(connection, (x, y, z), (vx, vy, vz)):
+def easycollision(connection, xyz, vxyz):
+	(x, y, z) = xyz
+	(vx, vy, vz) = vxyz
 	time = 0
 	vx = vx * 32.0
 	vy = vy * 32.0
