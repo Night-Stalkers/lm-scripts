@@ -54,12 +54,13 @@ import subprocess
 # lazy workaround for pique's pyspades.server implementation
 grenade_packet, block_action = GrenadePacket(), BlockAction()
 
+# workaround until I get dependency modules importing normally
 import importlib.util
-spec = importlib.util.spec_from_file_location("cbc", "/home/hourai/.config/piqueserver/scripts/cbc.py")
+spec = importlib.util.spec_from_file_location("cbc", "path/to/cbc")
 cbc = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cbc)
 
-spec = importlib.util.spec_from_file_location("buildbox", "/home/hourai/.config/piqueserver/scripts/buildbox.py")
+spec = importlib.util.spec_from_file_location("buildbox", "path/to/buildbox")
 buildbox = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(buildbox)
 #import buildbox
