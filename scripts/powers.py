@@ -41,20 +41,37 @@ Changelog
 # Script by Danke!
 # Edits by iCherry, Hourai (Yui)
 # Bugfix by lecom ;)
-from pyspades.server import grenade_packet
+from pyspades.contained import GrenadePacket, BlockAction
 from pyspades.world import Grenade
 from pyspades.common import Vertex3
 from pyspades.collision import distance_3d_vector
-from pyspades.server import block_action
 from pyspades.constants import *
-from commands import add, admin
+from piqueserver.commands import add, admin, command
 from twisted.internet.reactor import callLater, seconds
 import random
-import commands
-import buildbox
-import cbc
+import subprocess
 
-ARMOR, DEADLY_DICE, TEAMMATE, TELEP, REGEN, POISON, NADEPL, ERECTOR = xrange(8)
+# lazy workaround for pique's pyspades.server implementation
+grenade_packet, block_action = GrenadePacket(), BlockAction()
+
+import importlib.util
+spec = importlib.util.spec_from_file_location("cbc", "/home/hourai/.config/piqueserver/scripts/cbc.py")
+cbc = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cbc)
+
+spec = importlib.util.spec_from_file_location("buildbox", "/home/hourai/.config/piqueserver/scripts/buildbox.py")
+buildbox = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(buildbox)
+#import buildbox
+#import cbc
+
+
+
+import os
+cwd = os.getcwd()
+print(cwd)
+
+ARMOR, DEADLY_DICE, TEAMMATE, TELEP, REGEN, POISON, NADEPL, ERECTOR = range(8)
 TP_RANGE = [0, 64, 128, 192]
 
 TENT_DISRUPT_DIST = 100
@@ -66,11 +83,12 @@ PRISON_X = 260
 PRISON_Y = 260
 PRISON_Z = 11
 
+@command('clearpowers')
 def clearpowers(connection):
     connection.intel_clear()
     return "You've sucessfully lost all your powers!"
-add(clearpowers)
 
+@command('checkpowers', 'id')
 def checkpowers(connection, player_id=None):
     proto = connection.protocol
     if player_id[0] == '#':
@@ -85,8 +103,7 @@ def checkpowers(connection, player_id=None):
         else:
             return "Player not found."
 
-add(checkpowers)
-
+@command('power', 'v')
 def power(connection, value = 8):
     value = int(value)
     if value > 7:
@@ -139,48 +156,46 @@ def power(connection, value = 8):
         connection.send_chat("Level 2 - Every block place makes a 4 high pillar (25 uses)")
         connection.send_chat("Level 1 - Every block place makes a 2 high pillar (25 uses)")
         connection.send_chat("The power of Erector (Toggle with /toggle_erector):")
-add(power)
 
-@admin
+@command('cheatpower', admin_only=True)
 def cheatpower(connection):
     try:
         connection.intel_upgrade()
         connection.send_chat("You have %s" % connection.explain_power())
     except TypeError as e:
-        print e
-add(cheatpower)
+        print(e)
 
-@admin
+# TODO: finish this function
+# @command('givepowers', 'id', 'p', admin_only=True)
+# def givepowers(connection, player_id, p)
+
+@command('magic', admin_only=True)
 def magic(connection):
     try:
         for i in range(10):
             connection.intel_upgrade()
         connection.send_chat("You have %s" % connection.explain_power())
         connection.protocol.irc_say("%s (%d) used MAGIC. (AUTO POWER CHEAT)" % (connection.name, connection.player_id))
-        connection.protocol.send_chat("%s (%d) used MAGIC. (AUTO POWER CHEAT)" % (connection.name, connection.player_id))
+        connection.protocol.broadcast_chat("%s (%d) used MAGIC. (AUTO POWER CHEAT)" % (connection.name, connection.player_id))
     except TypeError as e:
-        print e
-add(magic)
+        print(e)
 
-def cheaterectorsBIGKOK(connection):
-    connection.erector_uses = connection.erector_uses + 10
-add(cheaterectorsBIGKOK)
-
+@command('toggle_teleport')
 def toggle_teleport(connection):
     connection.Ttoggle_teleport = not connection.Ttoggle_teleport
-    connection.send_chat("Toggled teleport power to %r" % connection.Ttoggle_teleport)
-add(toggle_teleport)
+    connection.send_chat_notice("Toggled teleport power to %r" % connection.Ttoggle_teleport)
 
+@command('toggle_erector')
 def toggle_erector(connection):
     connection.Ttoggle_erector = not connection.Ttoggle_erector
-    connection.send_chat("Toggled erector power to %r" % connection.Ttoggle_erector)
-add(toggle_erector)
+    connection.send_chat_notice("Toggled erector power to %r" % connection.Ttoggle_erector)
 
+@command('toggle_erector')
 def toggle_nospam_mode(connection):
     connection.no_spam_mode = not connection.no_spam_mode
-    connection.send_chat("No spam mode enabled: %r" % connection.no_spam_mode)
-add(toggle_nospam_mode)
+    connection.send_chat_notice("No spam mode enabled: %r" % connection.no_spam_mode)
 
+@command('powerpref', 'v')
 def powerpref(connection, value = 8):
     value = int(value)
     if value > 7:
@@ -191,14 +206,13 @@ def powerpref(connection, value = 8):
         connection.send_chat("Preference is ignored on your first intel grab.")
     elif value <= 8:
         connection.intel_power_pref = value
-        connection.send_chat("Preference saved.")
-add(powerpref)
+        connection.send_chat_notice("Preference saved.")
 
+@command('current')
 def current(connection):
     connection.send_chat("Type /clearpowers to remove all your current powers")
     message = "You have " + connection.explain_power()
     return message
-add(current)
 
 def apply_script(protocol, connection, config):
     protocol, connection = cbc.apply_script(protocol, connection, config)
@@ -270,12 +284,12 @@ def apply_script(protocol, connection, config):
             self.headshot_splode = True
             connection.grenade_exploded(self, grenade)
 
-        def on_hit(self, hit_amount, hit_player, type, grenade):
-            value = connection.on_hit(self, hit_amount, hit_player, type, grenade)
+        def on_hit(self, hit_amount, hit_player, kill_type, grenade):
+            value = connection.on_hit(self, hit_amount, hit_player, kill_type, grenade)
             if (self.intel_p_lvl[6] and grenade and self.player_id == hit_player.player_id):
                 if not self.grenade_immunity_msg_timeout:
                     if not self.no_spam_mode:
-                        self.send_chat("You are immunized against all danger!")
+                        self.send_chat_notice("You are immunized against all danger!")
                     self.grenade_immunity_msg_timeout = True
                     callLater(3, self._grenade_immunity_timout)
                 return 0
@@ -283,7 +297,7 @@ def apply_script(protocol, connection, config):
                 return value
             value = hit_amount
             if hit_player.intel_p_lvl[0] > 0:
-                if type != HEADSHOT_KILL and type != MELEE_KILL:
+                if kill_type != HEADSHOT_KILL and kill_type != MELEE_KILL:
                     if hit_player.intel_p_lvl[0] == 3:
                         value *= .125
                     if hit_player.intel_p_lvl[0] == 2:
@@ -291,46 +305,47 @@ def apply_script(protocol, connection, config):
                     if hit_player.intel_p_lvl[0] == 1:
                         value *= .50
                 else:
-                    self.send_chat("%s is wearing armor! Aim for the head!" % hit_player.name )
+                    self.send_chat_notice("%s is wearing armor! Aim for the head!" % hit_player.name )
             if self.intel_p_lvl[1] > 0:
                 dice_roll = random.randint(1, 100)
                 if dice_roll <= 20 and self.intel_p_lvl[1] == 3:
                     value = 100
-                    hit_player.send_chat("You have been instakilled by %s !" % self.name)
+                    hit_player.send_chat_notice("You have been instakilled by %s !" % self.name)
                     if not self.no_spam_mode:
-                        self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                        self.send_chat_notice("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
                 if dice_roll <= 15 and self.intel_p_lvl[1] == 2:
                     value = 100
-                    hit_player.send_chat("You have been instakilled by %s !" % self.name)
+                    hit_player.send_chat_notice("You have been instakilled by %s !" % self.name)
                     if not self.no_spam_mode:
-                        self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                        self.send_chat_notice("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
                 if dice_roll <= 10 and self.intel_p_lvl[1] == 1:
                     value = 100
-                    hit_player.send_chat("You have been instakilled by %s !" % self.name)
+                    hit_player.send_chat_notice("You have been instakilled by %s !" % self.name)
                     if not self.no_spam_mode:
-                        self.send_chat("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
+                        self.send_chat_notice("Alea iacta est... You have rolled the dice of life and instakilled %s!" % hit_player.name)
             if self.intel_p_lvl[5] > 0:
-                hit_player.send_chat("You have been poisoned by %s ! Get to the tent to cure it!" % self.name)
-                hit_player.poisoner = self
-                hit_player.poison = self.intel_p_lvl[5]
+                if hit_player.poisoner is not None:
+                    hit_player.send_chat_warning("You have been poisoned by %s ! Get to the tent to cure it!" % self.name)
+                    hit_player.poisoner = self
+                    hit_player.poison = self.intel_p_lvl[5]
 
             return value
 
-        def on_kill(self, killer, type, grenade):
+        def on_kill(self, killer, kill_type, grenade):
             if killer != self and killer is not None:
                 self.send_chat("Type /power for more info on Intel Powers")
                 self.send_chat("You were killed by %s who had %s" % (killer.name, killer.explain_power()))
                 if killer.intel_p_lvl[2] > 0:
                     healcount = 0
-                    if killer.intel_p_lvl[2] != 2 and type == HEADSHOT_KILL:
+                    if killer.intel_p_lvl[2] != 2 and kill_type == HEADSHOT_KILL:
                         healcount += 1
                         killer.heal_team(10)
                     if killer.intel_p_lvl[2] > 1:
                         healcount += 1
                         killer.heal_team(30)
-                    if healcount > 0 and not killer.no_spam_mode:
-                        killer.send_chat("Your kill has healed you and your teammates!")
-                if killer.intel_p_lvl[6] > 0 and type == HEADSHOT_KILL:
+                    #if healcount > 0 and not killer.no_spam_mode:
+                    #    killer.send_chat_notice("Your kill has healed you and your teammates!")
+                if killer.intel_p_lvl[6] > 0 and kill_type == HEADSHOT_KILL:
                     dice_roll = random.randint(1, 100)
                     if dice_roll <= 50 and killer.intel_p_lvl[6] == 3:
                         killer.nadesplode(self)
@@ -341,9 +356,9 @@ def apply_script(protocol, connection, config):
                 killer.power_kills = killer.power_kills + 1
                 if killer.power_kills == 10:
                     killer.power_kills = 0
-                    killer.send_chat("You have reached 10 kills, you get a power-up!")
+                    killer.send_chat_status("You have reached 10 kills, you get a power-up!")
                     killer.intel_upgrade()
-            return connection.on_kill(self, killer, type, grenade)
+            return connection.on_kill(self, killer, kill_type, grenade)
 
         def on_spawn(self, pos):
             if self.intel_p_lvl[3] == 3:
@@ -368,18 +383,18 @@ def apply_script(protocol, connection, config):
 
         def heal_team(self, value):
             for player in self.team.get_players():
-                if player is None or player.hp <= 0:
+                if player is None or player.hp is None:
                     return
                 dist = distance_3d_vector(self.world_object.position, player.world_object.position)
                 if dist <= 16.0 or player == self:
                     player.poison = 0
                     player.poisoner = None
-                    player.set_hp(player.hp + value, type = FALL_KILL)
+                    player.set_hp(player.hp + value, kill_type = FALL_KILL)
                     if player != self:
-                        player.send_chat("You have been healed by %s " % self.name)
+                        player.send_chat_notice("You have been healed by %s " % self.name)
 
         def intel_every_second(self):
-            if self is None or self.hp <= 0:
+            if self is None or self.hp is None:
                 return
             self.headshot_splode = False
             if self.poison > 0 and self.poisoner is not None and self.poisoner.world_object is not None:
@@ -387,11 +402,11 @@ def apply_script(protocol, connection, config):
 
             elif self.intel_p_lvl[4] > 0:
                 if self.intel_p_lvl[4] == 3:
-                    self.set_hp(self.hp + 10, type = FALL_KILL)
+                    self.set_hp(self.hp + 10, kill_type = FALL_KILL)
                 if self.intel_p_lvl[4] == 2:
-                    self.set_hp(self.hp + 5, type = FALL_KILL)
+                    self.set_hp(self.hp + 5, kill_type = FALL_KILL)
                 if self.intel_p_lvl[4] == 1:
-                    self.set_hp(self.hp + 2, type = FALL_KILL)
+                    self.set_hp(self.hp + 2, kill_type = FALL_KILL)
 
         def on_refill(self):
             if self.intel_p_lvl[3] == 3:
@@ -419,15 +434,15 @@ def apply_script(protocol, connection, config):
             if connection.on_flag_take(self) is not False:
                 self.intel_temporary()
                 self.send_chat("Bring intel to your base to keep it!")
-                self.send_chat("You have temporarily gained power: %s" % self.explain_temp())
+                self.send_chat_notice("You have temporarily gained power: %s" % self.explain_temp())
 
         def on_color_set(self, color):
             if not self.teleport_ready:
-                self.send_chat("Wait more before using teleport again!")
+                self.send_chat_warning("Wait more before using teleport again!")
                 return connection.on_color_set(self, color)
 
             if (self.tool != BLOCK_TOOL and self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1):
-                self.send_chat("Switch to BLOCK TOOL to use teleport!")
+                self.send_chat_warning("Switch to BLOCK TOOL to use teleport!")
                 return connection.on_color_set(self, color)
             try:
                 if self.intel_p_lvl[3] and self.intel_p_lvl[3] >= 1:
@@ -441,22 +456,22 @@ def apply_script(protocol, connection, config):
                             dist_tent = distance_3d_vector(loc_ver, self.team.other.base)
                             dist_intel = distance_3d_vector(loc_ver, self.team.other.flag)
                             if dist_tent < TENT_DISRUPT_DIST or dist_intel < INTEL_DISRUPT_DIST:
-                                self.send_chat("The enemy disrupts your teleport power!")
+                                self.send_chat_error("The enemy disrupts your teleport power!")
                                 return connection.on_color_set(self, color)
                             elif loc_ver.x > PRISON_X - 10 and loc_ver.x <= PRISON_X \
                             and loc_ver.y > PRISON_Y - 10 and loc_ver.y <= PRISON_Y \
                                 and loc_ver.z <= PRISON_Z + 10:
-                                self.send_chat("Can't teleport to prison.")
+                                self.send_chat_error("Can't teleport to prison.")
                                 return connection.on_color_set(self, color)
                             self.do_teleport(x, y, z)
                             self.teleport_ready = False
                             callLater(TP_COOLDOWN_TIME, self._ready_teleport)
                         else:
-                            self.send_chat("Teleport out of range!")
+                            self.send_chat_error("Teleport out of range!")
             except OverflowError:
                 # This shouldn't be reached under normal conditions
-                print "self.intel_p_lvl not found for player #%d, player is a bot perhaps?" % self.player_id
-                print "If you see this message, please report it lol"
+                print("self.intel_p_lvl not found for player #%d, player is a bot perhaps?" % self.player_id)
+                print("If you see this message, please report it lol")
                 self.intel_clear()
             return connection.on_color_set(self, color)
 
@@ -471,19 +486,19 @@ def apply_script(protocol, connection, config):
             if (self.Ttoggle_teleport):
                 if self != self.team.other.flag.player:
                     if self.teleport_uses == 0:
-                        self.send_chat("You've run out of teleport uses!")
+                        self.send_chat_error("You've run out of teleport uses!")
                     if self.teleport_uses > 0:
                         self.teleport_uses -= 1
-                        self.send_chat("%s teleport uses remaining." % self.teleport_uses)
+                        self.send_chat_notice("%s teleport uses remaining." % self.teleport_uses)
                         self.clear_tele_area(x, y, z)
                         self.set_location_safe((x, y, z-1))
                         msg = "%s (#%d) used Teleport!" % (self.name, self.player_id)
                         msg2 = "%s used Teleport!" % (self.name)
                         self.protocol.irc_say(msg)
-                        self.protocol.send_chat(msg2)
-                        print msg
+                        self.protocol.broadcast_chat(msg2)
+                        print(msg)
                 else:
-                    self.send_chat("You can't teleport while holding intel!")
+                    self.send_chat_error("You can't teleport while holding intel!")
             return
 
         def sign(self, x):
@@ -505,15 +520,15 @@ def apply_script(protocol, connection, config):
                             self.erect(x, y, z, 6)
                         self.erector_uses = self.erector_uses-1
                         if self.erector_uses == 0:
-                            self.send_chat("You've run out of erector uses!")
+                            self.send_chat_error("You've run out of erector uses!")
             return connection.on_block_build(self, x, y, z)
 
         def clear_tele_area(self, x, y, z):
             return
             map = self.protocol.map
-            for nade_x in xrange(x - 1, x + 2):
-                for nade_y in xrange(y - 1, y + 2):
-                    for nade_z in xrange(z - 1, z + 2):
+            for nade_x in range(x - 1, x + 2):
+                for nade_y in range(y - 1, y + 2):
+                    for nade_z in range(z - 1, z + 2):
                         if nade_x > 0 and nade_x < 512 and nade_y > 0 and nade_y < 512 and nade_z > 0 and nade_z < 63:
                             map.remove_point(nade_x, nade_y, nade_z)
             block_action.x = x
@@ -527,7 +542,7 @@ def apply_script(protocol, connection, config):
             self.intel_temp = self.intel_upgrade()
 
         def intel_upgrade(self):
-            say = self.send_chat
+            say = self.send_chat_status
             if sum(self.intel_p_lvl) >= 24:
                 say("You have every power maxed out!")
                 return False
@@ -560,7 +575,7 @@ def apply_script(protocol, connection, config):
     class IntelPowerProtocol(protocol):
         intel_second_counter = 0
         def on_game_end(self):
-            for player in self.players.values():
+            for player in list(self.players.values()):
                 player.intel_clear()
             self.send_chat("Round is over! Intel Powers have been reset!")
             protocol.on_game_end(self)
@@ -568,7 +583,7 @@ def apply_script(protocol, connection, config):
         def on_world_update(self):
             self.intel_second_counter += 1
             if self.intel_second_counter >= 90:
-                for player in self.players.values():
+                for player in list(self.players.values()):
                     player.intel_every_second()
                 self.intel_second_counter = 0
             protocol.on_world_update(self)

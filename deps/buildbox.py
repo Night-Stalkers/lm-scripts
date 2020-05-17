@@ -2,7 +2,11 @@ from pyspades.contained import BlockLine, SetColor
 from pyspades.common import make_color
 from pyspades.constants import *
 from itertools import product
-import cbc
+
+import importlib.util
+spec = importlib.util.spec_from_file_location("cbc", "/home/hourai/.config/piqueserver/scripts/cbc.py")
+cbc = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cbc)
 
 # this file must be in the /scripts folder, but it is NOT included in config.txt
 
@@ -11,7 +15,7 @@ MAX_LINE_BLOCKS = 64
 def ordered_product(ranges, order):
     """Iterates through ranges in the order specified in order, but each yeild returns in the original order of the ranges"""
     
-    order_inv = zip(*sorted(zip(order, sorted(order))))[1]
+    order_inv = list(zip(*sorted(zip(order, sorted(order)))))[1]
     
     for prod in product(*(ranges[o] for o in order)):
         yield tuple(prod[o] for o in order_inv)
@@ -37,15 +41,15 @@ def build_filled_generator(protocol, x1, y1, z1, x2, y2, z2, color, god = False,
     
     map = protocol.map
     
-    ranges = [xrange(min(x1 , x2) , max(x1 , x2)+1)
-            , xrange(min(y1 , y2) , max(y1 , y2)+1)
-            , xrange(min(z1 , z2) , max(z1 , z2)+1)]
+    ranges = [range(min(x1 , x2) , max(x1 , x2)+1)
+            , range(min(y1 , y2) , max(y1 , y2)+1)
+            , range(min(z1 , z2) , max(z1 , z2)+1)]
     
-    order = zip(*sorted(zip([len(x) for x in ranges], [0, 1, 2])))[1]
+    order = list(zip(*sorted(zip([len(x) for x in ranges], [0, 1, 2]))))[1]
     
     # set the first block position
     prod = ordered_product(ranges, order)
-    line.x1, line.y1, line.z1 = prod.next()
+    line.x1, line.y1, line.z1 = next(prod)
     line.x2 = line.x1
     line.y2 = line.y1
     line.z2 = line.z1

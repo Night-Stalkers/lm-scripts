@@ -75,7 +75,7 @@ def apply_script(protocol, connection, config):
         return protocol, connection
     
     class CycleBlockCoiteratorProtocol(protocol):
-        CBC_UPDATE, CBC_CANCELLED, CBC_FINISHED = range(3)
+        CBC_UPDATE, CBC_CANCELLED, CBC_FINISHED = list(range(3))
         
         def __init__(self, *args, **kwargs):
             protocol.__init__(self, *args, **kwargs)
@@ -86,7 +86,7 @@ def apply_script(protocol, connection, config):
         
         def cbc_add(self, generator, update_time = 10.0, callback = None, *args):
             info = _CbcInfo(generator, update_time, callback, args)
-            handle = max(self._cbc_generators.keys() + [0]) + 1
+            handle = max(list(self._cbc_generators.keys()) + [0]) + 1
             self._cbc_generators[handle] = info
             if not self._cbc_running:
                 self._cbc_running = True
@@ -95,7 +95,7 @@ def apply_script(protocol, connection, config):
             return handle
         
         def cbc_cancel(self, handle):
-            if self._cbc_generators.has_key(handle):
+            if handle in self._cbc_generators:
                 info = self._cbc_generators[handle]
                 if info.callback is not None:
                     info.callback(CANCELLED, info.progress, time.time() - info.start, *info.callback_args)
@@ -107,7 +107,7 @@ def apply_script(protocol, connection, config):
             cycle_time = time.time()
             while self._cbc_generators:
                 try:
-                    for handle, info in self._cbc_generators.iteritems():
+                    for handle, info in self._cbc_generators.items():
                         if sent_unique > MAX_UNIQUE_PACKETS:
                             return
                         if sent_total > MAX_PACKETS:
@@ -115,7 +115,7 @@ def apply_script(protocol, connection, config):
                         if time.time() - cycle_time > MAX_TIME:
                             return
                         current_handle = handle
-                        sent, progress = info.generator.next()
+                        sent, progress = next(info.generator)
                         sent_unique += sent
                         sent_total  += sent * len(self.players)
                         if (time.time() - info.last_update > info.update_interval):
@@ -134,13 +134,13 @@ def apply_script(protocol, connection, config):
         
         def on_map_change(self, map):
             if hasattr(self, '_cbc_generators'):
-                for handle in self._cbc_generators.keys():
+                for handle in list(self._cbc_generators.keys()):
                     self.cbc_cancel(handle)
             protocol.on_map_change(self, map)
         
         def on_map_leave(self):
             if hasattr(self, '_cbc_generators'):
-                for handle in self._cbc_generators.keys():
+                for handle in list(self._cbc_generators.keys()):
                     self.cbc_cancel(handle)
             protocol.on_map_leave(self)
     
