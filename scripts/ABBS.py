@@ -586,7 +586,7 @@ def apply_script(protocol, connection, config):
             yobi = None
             for bot in team.get_players():
                 if bot.local and bot.world_object:
-                    if bot.hp is None or bt.hp <= 0:
+                    if bot.hp is None or bot.hp <= 0:
                         bot.disconnect() #死んでる奴いたらそいつ即刻排除
                         return True
                     if bot.aim_at==None:
