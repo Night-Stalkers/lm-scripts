@@ -20,6 +20,9 @@ Modified by: Hourai(Yui)
 
 Changelog:
 
+    1.3.0:
+        * Ported to python3 for Pique support
+
     1.2.0:
         * Added timed cooldown.
         * Improved some of the messages.
@@ -33,14 +36,18 @@ Changelog:
 
 """
 
+import sys
+sys.path.append('~/.config/piqueserver/scripts/')
 from easyaos import *
 from twisted.internet.reactor import callLater, seconds
 from pyspades.common import Vertex3
 from pyspades.world import Grenade
-from pyspades.server import grenade_packet
+from pyspades.contained import GrenadePacket
 import random
 from pyspades.constants import *
-from commands import admin, add
+from piqueserver.commands import admin, command
+
+grenade_packet = GrenadePacket()
 
 VERSION = "1.2.0"
 
@@ -54,7 +61,16 @@ RPG_COOLDOWN_LIMIT = 6 # shots before cooldown
 RPG_COOLDOWN_TIME = 1 # minutes
 
 
-@admin
+@command('give_rpg', admin_only = True)
+def give_rpg(connection, num=None):
+    global RPG_ADD_USES
+    if num is None:
+        num = RPG_ADD_USES
+    connection.RPG_uses_remaining += num
+    connection.is_on_cooldown = False
+    connection.broadcast_chat("You can use RPG now. %d rockets left" % connection.RPG_uses_remaining)
+
+@command('set_rpg_killstreak', admin_only = True)
 def set_rpg_killstreak(connection, nkills=None):
     global STREAK_REQ
     if nkills:
@@ -68,7 +84,7 @@ def set_rpg_killstreak(connection, nkills=None):
         return "RPG killstreak is currently set to %d." % STREAK_REQ
 
 
-@admin
+@command('set_rpg_increase', admin_only = True)
 def set_rpg_increase(connection, ninc=None):
     global RPG_ADD_USES
     if ninc:
@@ -82,14 +98,11 @@ def set_rpg_increase(connection, ninc=None):
         return "RPG rockets earned per killstreak is currently %d." % RPG_ADD_USES
 
 
+@command('rpg_info')
 def rpg_info(connection):
     connection.send_chat("This server is running RPG script %s by yuyasato (yuya_aos), modified by Hourai (Yui)!" % VERSION)
     connection.send_chat("Get %d kills in a row to get %d RPG rockets!" % (STREAK_REQ, RPG_ADD_USES))
 
-
-add(rpg_info)
-add(set_rpg_killstreak)
-add(set_rpg_increase)
 
 
 def apply_script(protocol, connection, config):
@@ -117,7 +130,7 @@ def apply_script(protocol, connection, config):
                 r = "rockets" if self.RPG_uses_remaining > 1 else "rocket"
                 self.send_chat("Your RPG is no longer on COOLDOWN! %s left: %d" % (r, self.RPG_uses_remaining))
                 msg = "%s (#%d) is no longer in RPG COOLDOWN." % (self.name, self.player_id)
-                print msg
+                print(msg)
                 self.protocol.irc_say(msg)
 
         def on_login(self, name):
@@ -148,11 +161,13 @@ def apply_script(protocol, connection, config):
                     self.send_chat("You get RPG ammo but your RPG is on COOLDOWN! %d rockets left." % self.RPG_uses_remaining)
 
                 msg = "%s is on a %d killstreak and gets RPG ammo!" % (self.name, self.streak)
-                self.protocol.send_chat(msg)
+                self.protocol.broadcast_chat(msg)
                 self.protocol.irc_say(msg)
             return connection.add_score(self, score)
 
-        def rpg(self, (x, y, z), (vx, vy, vz)):
+        def rpg(self, xxx_todo_changeme, xxx_todo_changeme1):
+            (x, y, z) = xxx_todo_changeme
+            (vx, vy, vz) = xxx_todo_changeme1
             if self.world_object is None:
                 return
             if self.trace_2[0] >= 0:
@@ -162,7 +177,7 @@ def apply_script(protocol, connection, config):
             z += vz
             VTfuse = False
             if FF:
-                for player in self.protocol.players.values():
+                for player in list(self.protocol.players.values()):
                     xa, ya, za = player.get_location()
                     xr, yr, zr = xa - x, ya - y, za - z
                     if xr ** 2 + yr ** 2 + zr ** 2 <= VTradius ** 2 and not player == self:
@@ -200,7 +215,7 @@ def apply_script(protocol, connection, config):
             grenade_packet.player_id = self.player_id
             grenade_packet.position = (x, y, z)
             grenade_packet.velocity = (0, 0, 0.0)
-            self.protocol.send_contained(grenade_packet)
+            self.protocol.broadcast_contained(grenade_packet)
             while count < 50:
                 callLater(count / 10000.0, self.makegre, x, y, z, count < 15)
                 count += 1
@@ -216,7 +231,7 @@ def apply_script(protocol, connection, config):
                 grenade_packet.player_id = self.player_id
                 grenade_packet.position = (xp, yp, zp)
                 grenade_packet.velocity = (0, 0, 0)
-                self.protocol.send_contained(grenade_packet)
+                self.protocol.broadcast_contained(grenade_packet)
 
         def on_grenade(self, time_left):
             if self.world_object.primary_fire and self.world_object.secondary_fire:
@@ -235,7 +250,7 @@ def apply_script(protocol, connection, config):
                                 m = "minutes" if RPG_COOLDOWN_TIME > 1 else "minute"
                                 self.send_chat("Your RPG is now on COOLDOWN for %d %s!" % (RPG_COOLDOWN_TIME, m))
                                 msg = "%s (#%d) enters RPG COOLDOWN." % (self.name, self.player_id)
-                                print msg
+                                print(msg)
                                 self.protocol.irc_say(msg)
                                 callLater(RPG_COOLDOWN_TIME*60, self._undo_cooldown)
                         else:
