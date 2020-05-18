@@ -1,4 +1,4 @@
-from __future__ import division
+
 
 """
 foxcatcher.py
@@ -68,7 +68,7 @@ Changelog:
 
 from math import tan, asin, pi, cos, sqrt, fabs
 
-from commands import add, admin
+from piqueserver.commands import command
 from pyspades.collision import distance_3d_vector
 
 NAME = "foxcatcher"
@@ -94,7 +94,7 @@ AUTOBAN_REASON = "Unlimited range hack detected."
 AUTOBAN_DURATION = 0
 
 
-@admin
+@command('toggle_foxcatcher_autoban', admin_only = True)
 def toggle_foxcatcher_autoban(connection):
     global AUTOBAN_ENABLED
     AUTOBAN_ENABLED = not AUTOBAN_ENABLED
@@ -103,13 +103,10 @@ def toggle_foxcatcher_autoban(connection):
     return msg
 
 
-add(toggle_foxcatcher_autoban)
-
-
 def log_msg(msg, protocol, print_name=True, warn=False):
     irc_relay = protocol.irc_relay
 
-    print "%s: %s" % (NAME, msg)
+    print("%s: %s" % (NAME, msg))
 
     if print_name:
         msg = "%s: %s" % (NAME, msg)
