@@ -15,18 +15,13 @@ Changelog:
         
 """
 
-from commands import add, name
+from piqueserver.commands import command
 from pyspades.constants import *
 
-@name('blocks')
+@command('toggle_infi_blocks', 'blocks')
 def toggle_infi_blocks(connection):
-    protocol = connection.protocol
-    if connection in protocol.players:
-        connection.infi_blocks = not connection.infi_blocks
-        return "You are {} infinite blocks mode.".format(["out of", "now in"][int(connection.infi_blocks)])
-
-
-add(toggle_infi_blocks)
+    connection.infi_blocks = not connection.infi_blocks
+    return "You are {} infinite blocks mode.".format(["out of", "now in"][int(connection.infi_blocks)])
 
 
 def apply_script(protocol, connection, config):
@@ -38,7 +33,7 @@ def apply_script(protocol, connection, config):
             if self.infi_blocks:
                 old_hp = self.hp
                 self.refill()
-                self.set_hp(old_hp, type = FALL_KILL)
+                self.set_hp(old_hp, kill_type = FALL_KILL)
         
         def on_block_build(self, x, y, z):
             self._infi_refill()
