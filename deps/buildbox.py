@@ -3,10 +3,7 @@ from pyspades.common import make_color
 from pyspades.constants import *
 from itertools import product
 
-import importlib.util
-spec = importlib.util.spec_from_file_location("cbc", "/home/hourai/.config/piqueserver/scripts/cbc.py")
-cbc = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cbc)
+import cbc
 
 # this file must be in the /scripts folder, but it is NOT included in config.txt
 
