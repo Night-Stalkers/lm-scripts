@@ -1,5 +1,3 @@
-from __future__ import division
-
 """
 foxcatcher.py
 Copyright (C) 2020 Night-Stalkers
@@ -68,8 +66,13 @@ Changelog:
 
 from math import tan, asin, pi, cos, sqrt, fabs
 
-from commands import add, admin
+from piqueserver.commands import command
 from pyspades.collision import distance_3d_vector
+
+from piqueserver.config import config
+irc_options = config.option('irc', {})
+irc_cfg = irc_options.get()
+irc_enabled = irc_cfg.get('enabled', False)
 
 NAME = "foxcatcher"
 VERSION = "1.1.0"
@@ -94,7 +97,7 @@ AUTOBAN_REASON = "Unlimited range hack detected."
 AUTOBAN_DURATION = 0
 
 
-@admin
+@command('toggle_foxcatcher_autoban', admin_only = True)
 def toggle_foxcatcher_autoban(connection):
     global AUTOBAN_ENABLED
     AUTOBAN_ENABLED = not AUTOBAN_ENABLED
@@ -102,14 +105,9 @@ def toggle_foxcatcher_autoban(connection):
     log_msg(msg, connection.protocol)
     return msg
 
-
-add(toggle_foxcatcher_autoban)
-
-
 def log_msg(msg, protocol, print_name=True, warn=False):
-    irc_relay = protocol.irc_relay
 
-    print "%s: %s" % (NAME, msg)
+    print("%s: %s" % (NAME, msg))
 
     if print_name:
         msg = "%s: %s" % (NAME, msg)
@@ -117,8 +115,10 @@ def log_msg(msg, protocol, print_name=True, warn=False):
     if warn:  # sets red text color for IRC warning message
         msg = '\x0304' + msg + '\x0f'
 
-    if irc_relay.factory.bot and irc_relay.factory.bot.colors:
-        irc_relay.send(msg)
+    if irc_enabled:
+        irc_relay = protocol.irc_relay
+        if irc_relay.factory.bot and irc_relay.factory.bot.colors:
+            irc_relay.send(msg)
 
 
 def foxcatcher_info(connection):

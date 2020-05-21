@@ -36,8 +36,6 @@ Changelog:
 
 """
 
-import sys
-sys.path.append('~/.config/piqueserver/scripts/')
 from easyaos import *
 from twisted.internet.reactor import callLater, seconds
 from pyspades.common import Vertex3
@@ -49,7 +47,7 @@ from piqueserver.commands import admin, command
 
 grenade_packet = GrenadePacket()
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 VTradius = 1
 vel = 2.0

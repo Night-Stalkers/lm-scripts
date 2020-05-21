@@ -49,28 +49,12 @@ from pyspades.constants import *
 from piqueserver.commands import add, admin, command
 from twisted.internet.reactor import callLater, seconds
 import random
-import subprocess
 
 # lazy workaround for pique's pyspades.server implementation
 grenade_packet, block_action = GrenadePacket(), BlockAction()
 
-# workaround until I get dependency modules importing normally
-import importlib.util
-spec = importlib.util.spec_from_file_location("cbc", "path/to/cbc")
-cbc = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cbc)
-
-spec = importlib.util.spec_from_file_location("buildbox", "path/to/buildbox")
-buildbox = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(buildbox)
-#import buildbox
-#import cbc
-
-
-
-import os
-cwd = os.getcwd()
-print(cwd)
+import buildbox
+import cbc
 
 ARMOR, DEADLY_DICE, TEAMMATE, TELEP, REGEN, POISON, NADEPL, ERECTOR = range(8)
 TP_RANGE = [0, 64, 128, 192]
@@ -89,7 +73,7 @@ def clearpowers(connection):
     connection.intel_clear()
     return "You've sucessfully lost all your powers!"
 
-@command('checkpowers', 'id')
+@command('checkpowers')
 def checkpowers(connection, player_id=None):
     proto = connection.protocol
     if player_id[0] == '#':
@@ -104,7 +88,7 @@ def checkpowers(connection, player_id=None):
         else:
             return "Player not found."
 
-@command('power', 'v')
+@command('power')
 def power(connection, value = 8):
     value = int(value)
     if value > 7:
@@ -196,7 +180,7 @@ def toggle_nospam_mode(connection):
     connection.no_spam_mode = not connection.no_spam_mode
     connection.send_chat_notice("No spam mode enabled: %r" % connection.no_spam_mode)
 
-@command('powerpref', 'v')
+@command('powerpref')
 def powerpref(connection, value = 8):
     value = int(value)
     if value > 7:
