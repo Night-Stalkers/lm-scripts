@@ -45,15 +45,13 @@ A player's (absolute) visibility can be described with a circle that has a radiu
 128 blocks, with the player being in the center of this circle. Every hit outside
 this circle is thus considered to be a fogshot.
 
-Fogshot determination only takes into account horizontal distance to the target,
-since the fog isn't affected by height. The vertical distance is only used to
-calculate pitch to the target, which is included in the warnings. The pitch itself
-isn't useful, however, it provides us with extra info about the conditions which the
-fogshot happened.
-
 Author: Hourai (Yui)
 
 Changelog:
+
+    1.2.0:
+        * No longer broadcasts warnings to server, only ban messages.
+        * Optimized 2d distance calculation.
 
     1.1.1:
         * Autobanning is now on by default.
@@ -64,7 +62,7 @@ Changelog:
 
 """
 
-from math import tan, asin, pi, cos, sqrt, fabs
+from math import sqrt
 
 from piqueserver.commands import command
 from pyspades.collision import distance_3d_vector
@@ -75,14 +73,10 @@ irc_cfg = irc_options.get()
 irc_enabled = irc_cfg.get('enabled', False)
 
 NAME = "foxcatcher"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 AUTHOR = "Hourai (Yui)"
 
 FOG_DIST = 128  # Self explanatory, do not change this
-
-# Number of incidents before the incidents get broadcasted to the entire server (all the players)
-# Regardless of this number, incidents are ALWAYS broadcasted to IRC
-MINIMUM_INCIDENTS_TO_BROADCAST = 2
 
 # Enables autobanning
 AUTOBAN_ENABLED = True
@@ -121,8 +115,9 @@ def log_msg(msg, protocol, print_name=True, warn=False):
             irc_relay.send(msg)
 
 
+@command("foxcatcher_info")
 def foxcatcher_info(connection):
-    connection.send_chat("This server is running %s %s created by %s!" % (NAME, VERSION, AUTHOR))
+    connection.send_chat("This server is running %s %s created by %s." % (NAME, VERSION, AUTHOR))
 
 
 def apply_script(protocol, connection, config):
@@ -130,40 +125,32 @@ def apply_script(protocol, connection, config):
 
         previous_incidents = 0  # Keeps track of previous fogshots
 
-        def on_login(self, name):  # Show version of the script and author when a player joins
-            foxcatcher_info(self)
-            return connection.on_login(self, name)
-
         def get_horizontal_dist_to_player(self, player):
-            # Calculate horizontal distance and pitch from self to player
 
-            dist = distance_3d_vector(self.world_object.position, player.world_object.position)
-            vdist = self.world_object.position.z - player.world_object.position.z
+            v1 = self.world_object.position.x, self.world_object.position.y
+            v2 = player.world_object.position.x, player.world_object.position.y
 
-            theta = asin(vdist / dist) * (180 / pi)
+            v3 = (v2[0] - v1[0], v2[1] - v1[1])
+            hdist = sqrt(v3[0]**2 + v3[1]**2)
 
-            hdist = sqrt(dist ** 2 - vdist ** 2)
-
-            return hdist, theta
+            return hdist
 
         def on_hit(self, hit_amount, hit_player, type_, grenade):
             # Most of the work happens here
             if not grenade:
 
-                hdist, pitch = self.get_horizontal_dist_to_player(hit_player)
+                hdist = self.get_horizontal_dist_to_player(hit_player)
 
                 if hdist >= FOG_DIST:
-                    msg = "FOGSHOT WARNING: %s (#%d) hit %s at a horizontal distance of %d blocks " \
-                          "(pitch: %.1f degrees). Previous incidents by this player: %d" \
+                    msg = "FOGSHOT WARNING: %s (#%d) hit %s at a horizontal distance of %d blocks. " \
+                          "Previous incidents by this player: %d" \
                           % (self.name, self.player_id,
-                             hit_player.name, int(hdist), pitch,
+                             hit_player.name, int(hdist),
                              self.previous_incidents)
                     log_msg(msg, self.protocol, print_name=False, warn=True)
-                    if self.previous_incidents >= MINIMUM_INCIDENTS_TO_BROADCAST:
-                        self.protocol.send_chat(msg)
 
                     if AUTOBAN_ENABLED and self.previous_incidents >= INCIDENTS_TO_AUTOBAN:
-                        msg = "Maximum fogshot incident limit reached by player %s (#%d). Issuing ban..."
+                        msg = "Maximum fogshot limit reached by player %s (#%d). Issuing ban..."
                         msg = msg % (self.name, self.player_id)
                         log_msg(msg, self.protocol, print_name=False, warn=True)
                         self.protocol.send_chat(msg)
