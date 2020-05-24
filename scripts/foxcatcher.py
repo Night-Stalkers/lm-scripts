@@ -52,6 +52,7 @@ Changelog:
     1.2.0:
         * No longer broadcasts warnings to server, only ban messages.
         * Optimized 2d distance calculation.
+        * Player receives no damage from fogshots.
 
     1.1.1:
         * Autobanning is now on by default.
@@ -65,9 +66,8 @@ Changelog:
 from math import sqrt
 
 from piqueserver.commands import command
-from pyspades.collision import distance_3d_vector
-
 from piqueserver.config import config
+
 irc_options = config.option('irc', {})
 irc_cfg = irc_options.get()
 irc_enabled = irc_cfg.get('enabled', False)
@@ -77,6 +77,7 @@ VERSION = "1.2.0"
 AUTHOR = "Hourai (Yui)"
 
 FOG_DIST = 128  # Self explanatory, do not change this
+FOG_DIST_SQUARED = FOG_DIST**2
 
 # Enables autobanning
 AUTOBAN_ENABLED = True
@@ -131,9 +132,8 @@ def apply_script(protocol, connection, config):
             v2 = player.world_object.position.x, player.world_object.position.y
 
             v3 = (v2[0] - v1[0], v2[1] - v1[1])
-            hdist = sqrt(v3[0]**2 + v3[1]**2)
 
-            return hdist
+            return v3[0]**2 + v3[1]**2
 
         def on_hit(self, hit_amount, hit_player, type_, grenade):
             # Most of the work happens here
@@ -141,11 +141,11 @@ def apply_script(protocol, connection, config):
 
                 hdist = self.get_horizontal_dist_to_player(hit_player)
 
-                if hdist >= FOG_DIST:
+                if hdist >= FOG_DIST_SQUARED:
                     msg = "FOGSHOT WARNING: %s (#%d) hit %s at a horizontal distance of %d blocks. " \
                           "Previous incidents by this player: %d" \
                           % (self.name, self.player_id,
-                             hit_player.name, int(hdist),
+                             hit_player.name, int(sqrt(hdist)),
                              self.previous_incidents)
                     log_msg(msg, self.protocol, print_name=False, warn=True)
 
@@ -157,8 +157,8 @@ def apply_script(protocol, connection, config):
                         self.ban(AUTOBAN_REASON, AUTOBAN_DURATION)
 
                     self.previous_incidents += 1
-
-            return connection.on_hit(self, hit_amount, hit_player, type_, grenade)
+                    return 0
+                return connection.on_hit(self, hit_amount, hit_player, type_, grenade)
 
     class FogshotWarnProtocol(protocol):
 
