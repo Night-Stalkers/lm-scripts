@@ -1,4 +1,4 @@
-# ns-scripts
+# lm-scripts
 A collecton of Python scripts for Ace of Spades server implementation [PySnip](https://github.com/NateShoffner/PySnip) by members of the Lumiere (former Night-Stalkers) communiy.
 
 These scripts are provided for free under the GPL-v3 license, except in scripts where we are not the original authors, these scripts do not have the license header, credit goes to their respective authors.
